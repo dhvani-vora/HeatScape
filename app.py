@@ -427,6 +427,67 @@ def road_color(highway):
 
     return "#687383"
 
+# =========================================================
+# STREET NETWORK DIAGNOSIS & INTERVENTION ASSIGNMENT
+# =========================================================
+
+def diagnose_roads(roads):
+    """
+    Analyzes real OpenStreetMap roads in the locality,
+    identifies road-specific heat issues, and assigns feasible interventions.
+    """
+    diagnosed = []
+    seen_names = set()
+
+    for r in roads:
+        tags = r.get("tags", {})
+        name = tags.get("name")
+        highway = tags.get("highway", "road")
+
+        if not name or name in seen_names or len(name) < 3:
+            continue
+        seen_names.add(name)
+
+        # 1. Wide Arterial Roads -> Avenue Trees & Transit Shade
+        if highway in ["primary", "trunk", "secondary"]:
+            issue = "Wide unshaded asphalt corridor radiating high thermal mass onto commuters."
+            action = "🌳 Avenue Tree Canopy + Shaded Bus Stops"
+            trees_possible = 180
+            roof_sqm_possible = 0
+            shade_possible = 4
+            feasibility = "Road width > 16m allows dual-verge native tree planting."
+
+        # 2. Narrow Commercial Streets / Canyons -> Cool Roofs on Adjacent Buildings
+        elif highway in ["pedestrian", "living_street", "service"] or "Bazaar" in name or "Street" in name:
+            issue = "Narrow urban canyon trap. Street is too narrow for tree planting."
+            action = "🏠 Cool Roofs on Adjacent Building Parcels"
+            trees_possible = 0
+            roof_sqm_possible = 8500
+            shade_possible = 6
+            feasibility = "Zero unpaved soil for trees; high-albedo rooftop retrofits are the only feasible cooling mechanism."
+
+        # 3. Residential & Collector Streets -> Permeable Pavement & Street Shading
+        else:
+            issue = "Moderate asphalt heat retention and lack of pedestrian shade."
+            action = "🚶 Tensile Shade Canopies & Pocket Greening"
+            trees_possible = 40
+            roof_sqm_possible = 3000
+            shade_possible = 2
+            feasibility = "Suitable for light canopy and tensile fabric over pedestrian crossings."
+
+        diagnosed.append({
+            "name": name,
+            "highway": highway,
+            "issue": issue,
+            "action": action,
+            "trees": trees_possible,
+            "roof_sqm": roof_sqm_possible,
+            "shade": shade_possible,
+            "feasibility": feasibility
+        })
+
+    return diagnosed[:8] # Return top 8 prominent named streets in the locality
+
 
 # =========================================================
 # THERMAL PLUME FOR MAIN MAP
@@ -1716,16 +1777,70 @@ st.markdown(
 # SIMULATOR
 # =========================================================
 
+# =========================================================
+# STREET-DRIVEN INTERVENTION SIMULATOR
+# =========================================================
+st.divider()
+st.subheader("🛣️ Street Network Diagnosis & Action Plan")
+st.write("Diagnose specific road conditions and select which streets to cool. Interventions on these streets will directly drive the Thermal Plume simulation below.")
+
+# Get diagnosed streets
+diagnosed_streets = diagnose_roads(roads)
+
+total_sim_trees = 0
+total_sim_roof = 0
+total_sim_shade = 0
+
+# Interactive road cards with selection checkboxes
+cols = st.columns(2)
+for idx, st_item in enumerate(diagnosed_streets):
+    col = cols[idx % 2]
+    with col:
+        st.markdown(f"#### 📍 {st_item['name']}")
+        st.caption(f"**Issue:** {st_item['issue']}")
+        st.markdown(f"**Recommended Action:** `{st_item['action']}`")
+        st.caption(f"ℹ️ *Feasibility:* {st_item['feasibility']}")
+
+        apply_road = st.checkbox(
+            f"Implement cooling on {st_item['name']}",
+            value=True if idx < 3 else False,
+            key=f"road_toggle_{idx}"
+        )
+
+        if apply_road:
+            total_sim_trees += st_item["trees"]
+            total_sim_roof += st_item["roof_sqm"]
+            total_sim_shade += st_item["shade"]
+
 st.divider()
 
-st.subheader(
-    "🔬 Intervention Simulator"
+# Display aggregated interventions driven by selected streets
+st.markdown("### 📊 Cumulative Interventions From Selected Streets")
+sc1, sc2, sc3 = st.columns(3)
+sc1.metric("🌳 Avenue Trees", f"{total_sim_trees:,} trees")
+sc2.metric("🏠 Cool Roof Area", f"{total_sim_roof:,} m²")
+sc3.metric("🚶 Shade Structures", f"{total_sim_shade} canopies")
+
+# Calculate simulated risk reduction based on the selected streets
+after_risk = simulate_intervention(
+    risk,
+    total_sim_trees,
+    total_sim_roof,
+    total_sim_shade
 )
 
-st.write(
-    "Move the controls. The map below will visibly "
-    "transform from the current heat state to the "
-    "simulated post-intervention state."
+st.write(f"**Heat Risk Impact:** {risk:.1f}/100 ➔ **{after_risk:.1f}/100** ({after_risk - risk:.1f} pts)")
+
+# Render the animated Thermal Plume map using the street-calculated after_risk
+st.components.v1.html(
+    intervention_map_html(
+        lat,
+        lon,
+        risk,
+        after_risk,
+        roads
+    ),
+    height=650
 )
 
 

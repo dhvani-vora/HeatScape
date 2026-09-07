@@ -2,13 +2,12 @@ import streamlit as st
 import folium
 from folium.plugins import HeatMap
 from streamlit_folium import st_folium
-import streamlit.components.v1 as components
 import requests
 import math
 from datetime import datetime
 
 # =========================================================
-# PAGE
+# PAGE CONFIG
 # =========================================================
 
 st.set_page_config(
@@ -18,133 +17,47 @@ st.set_page_config(
 )
 
 # =========================================================
-# BEAUTIFUL HEATSCAPE THEME
+# STYLE
 # =========================================================
 
 st.markdown("""
 <style>
 
-.stApp {
-    background:
-        radial-gradient(circle at 10% 0%, rgba(255,91,54,0.08), transparent 28%),
-        radial-gradient(circle at 90% 10%, rgba(255,184,77,0.06), transparent 25%),
-        #0b1117;
+.main {
+    background-color: #0b0f14;
 }
 
 .block-container {
-    max-width: 1450px;
-    padding-top: 2rem;
-    padding-bottom: 4rem;
+    padding-top: 1.5rem;
 }
 
-h1 {
-    font-size: 3.2rem !important;
-    font-weight: 800 !important;
-    letter-spacing: -2px;
-}
-
-h2 {
-    font-weight: 750 !important;
-}
-
-h3 {
-    font-weight: 700 !important;
+h1, h2, h3 {
+    color: white;
 }
 
 p, label {
-    color: #b8c5d1 !important;
-}
-
-[data-testid="stMetric"] {
-    background: linear-gradient(
-        145deg,
-        #151e27,
-        #10171e
-    );
-    border: 1px solid #273542;
-    padding: 18px;
-    border-radius: 16px;
-}
-
-[data-testid="stMetricValue"] {
-    color: #ffffff !important;
-}
-
-[data-testid="stMetricLabel"] {
-    color: #91a1b1 !important;
+    color: #b8c1cc;
 }
 
 .recommendation {
-    background:
-        linear-gradient(
-            135deg,
-            rgba(42, 130, 75, 0.20),
-            rgba(20, 35, 27, 0.95)
-        );
-    border: 1px solid #2f8150;
-    padding: 25px;
-    border-radius: 18px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.20);
+    background: #14251b;
+    border: 1px solid #32734a;
+    padding: 22px;
+    border-radius: 15px;
 }
 
 .livebox {
-    background:
-        linear-gradient(
-            135deg,
-            rgba(25, 91, 116, 0.22),
-            rgba(13, 25, 35, 0.95)
-        );
-    border: 1px solid #27617a;
-    padding: 20px;
-    border-radius: 18px;
+    background: #111d28;
+    border: 1px solid #28506d;
+    padding: 18px;
+    border-radius: 15px;
 }
 
 .costbox {
-    background:
-        linear-gradient(
-            135deg,
-            rgba(255, 165, 70, 0.08),
-            rgba(19, 24, 30, 0.98)
-        );
-    border: 1px solid #554330;
-    padding: 25px;
-    border-radius: 18px;
-}
-
-.section {
-    background: #101820;
-    border: 1px solid #22303c;
-    border-radius: 18px;
+    background: #171b22;
+    border: 1px solid #303744;
     padding: 20px;
-}
-
-.stSlider > div > div > div {
-    background: #f07b4f !important;
-}
-
-[data-testid="stSidebar"] {
-    background:
-        linear-gradient(
-            180deg,
-            #0d151c,
-            #0b1117
-        );
-    border-right: 1px solid #22303c;
-}
-
-[data-testid="stSidebar"] h1,
-[data-testid="stSidebar"] h2,
-[data-testid="stSidebar"] h3 {
-    color: white !important;
-}
-
-hr {
-    border-color: #24323e !important;
-}
-
-.small {
-    color: #718191;
-    font-size: 13px;
+    border-radius: 15px;
 }
 
 </style>
@@ -152,7 +65,7 @@ hr {
 
 
 # =========================================================
-# LOCALITIES
+# CHENNAI LOCALITIES
 # =========================================================
 
 localities = {
@@ -295,16 +208,46 @@ localities = {
 
 
 # =========================================================
-# FUNCTIONS
+# RISK FUNCTIONS
 # =========================================================
 
 def normalize(value, minimum, maximum):
+
+    if maximum == minimum:
+        return 0
+
     return max(
         0,
         min(
             100,
-            ((value - minimum) / (maximum - minimum)) * 100
+            ((value - minimum) /
+             (maximum - minimum)) * 100
         )
+    )
+
+
+def calculate_risk(lst, ndvi, built, population):
+
+    heat = normalize(
+        lst,
+        30,
+        45
+    )
+
+    vegetation_deficit = 100 - (
+        ndvi * 100
+    )
+
+    risk = (
+        0.45 * heat +
+        0.25 * built +
+        0.20 * vegetation_deficit +
+        0.10 * population
+    )
+
+    return max(
+        0,
+        min(100, risk)
     )
 
 
@@ -313,48 +256,59 @@ def get_category(risk):
     if risk < 25:
         return "Low"
 
-    if risk < 50:
+    elif risk < 50:
         return "Moderate"
 
-    if risk < 75:
+    elif risk < 75:
         return "High"
 
     return "Critical"
 
 
-def calculate_risk(lst, ndvi, built, population):
+def get_contributions(
+    lst,
+    ndvi,
+    built,
+    population
+):
 
-    heat = normalize(lst, 30, 45)
-
-    vegetation_deficit = 100 - ndvi * 100
-
-    return max(
-        0,
-        min(
-            100,
-            0.45 * heat +
-            0.25 * built +
-            0.20 * vegetation_deficit +
-            0.10 * population
-        )
+    heat = normalize(
+        lst,
+        30,
+        45
     )
 
-
-def get_contributions(lst, ndvi, built, population):
-
-    heat = normalize(lst, 30, 45)
-
-    vegetation_deficit = 100 - ndvi * 100
+    vegetation_deficit = (
+        100 -
+        (ndvi * 100)
+    )
 
     return {
-        "Surface Heat": 0.45 * heat,
-        "Built-up Area": 0.25 * built,
-        "Vegetation Deficit": 0.20 * vegetation_deficit,
-        "Population Exposure": 0.10 * population
+
+        "Surface Heat":
+            0.45 * heat,
+
+        "Built-up Area":
+            0.25 * built,
+
+        "Vegetation Deficit":
+            0.20 * vegetation_deficit,
+
+        "Population Exposure":
+            0.10 * population
     }
 
 
-def get_recommendation(lst, ndvi, built, population):
+# =========================================================
+# RECOMMENDATION
+# =========================================================
+
+def get_recommendation(
+    lst,
+    ndvi,
+    built,
+    population
+):
 
     contributions = get_contributions(
         lst,
@@ -372,31 +326,42 @@ def get_recommendation(lst, ndvi, built, population):
 
         return (
             "🌳 Tree Planting / Green Corridor",
-            "Vegetation deficit is the dominant contributor. "
-            "Increase tree cover along streets and connect existing green spaces."
+
+            "Vegetation deficit is the dominant "
+            "contributor. Increase tree cover "
+            "along streets and connect existing "
+            "green spaces."
         )
 
-    if dominant == "Built-up Area":
+    elif dominant == "Built-up Area":
 
         return (
             "🏠 Cool Roofs + Shade",
-            "Dense built-up surfaces are absorbing significant heat. "
-            "Prioritize reflective roofs and shaded public areas."
+
+            "Dense built-up surfaces are absorbing "
+            "significant heat. Prioritize reflective "
+            "roofs and shaded public areas."
         )
 
-    if dominant == "Population Exposure":
+    elif dominant == "Population Exposure":
 
         return (
             "🚶 Shaded Public Corridor",
-            "High population exposure makes pedestrian cooling infrastructure "
-            "the most important first intervention."
+
+            "High population exposure makes "
+            "pedestrian cooling infrastructure "
+            "the priority."
         )
 
-    return (
-        "🌳 Green Corridor + Cool Roofs",
-        "Surface heat is the dominant contributor. "
-        "Combine vegetation with reflective built surfaces."
-    )
+    else:
+
+        return (
+            "🌳 Green Corridor + Cool Roofs",
+
+            "Surface heat is the dominant contributor. "
+            "Combine vegetation with reflective "
+            "built surfaces."
+        )
 
 
 # =========================================================
@@ -410,8 +375,11 @@ def get_live_weather(lat, lon):
         "https://api.open-meteo.com/v1/forecast"
         f"?latitude={lat}"
         f"&longitude={lon}"
-        "&current=temperature_2m,relative_humidity_2m,"
-        "apparent_temperature,wind_speed_10m"
+        "&current="
+        "temperature_2m,"
+        "relative_humidity_2m,"
+        "apparent_temperature,"
+        "wind_speed_10m"
     )
 
     try:
@@ -421,15 +389,17 @@ def get_live_weather(lat, lon):
             timeout=10
         )
 
+        response.raise_for_status()
+
         return response.json()["current"]
 
-    except:
+    except Exception:
 
         return None
 
 
 # =========================================================
-# OSM ROADS
+# OPENSTREETMAP ROADS
 # =========================================================
 
 @st.cache_data(ttl=3600)
@@ -439,31 +409,44 @@ def get_osm_roads(lat, lon):
     [out:json][timeout:25];
 
     (
-      way["highway"]
-      (around:1800,{lat},{lon});
+        way["highway"]
+        (around:1800,{lat},{lon});
     );
 
     out geom;
     """
 
+    url = (
+        "https://overpass-api.de/api/interpreter"
+    )
+
     try:
 
         response = requests.post(
-            "https://overpass-api.de/api/interpreter",
+            url,
             data=query,
             headers={
                 "User-Agent":
-                "HeatScape/1.0 urban-heat-hackathon"
+                "HeatScape/1.0"
             },
             timeout=30
         )
 
-        return response.json()["elements"]
+        response.raise_for_status()
 
-    except:
+        return response.json().get(
+            "elements",
+            []
+        )
+
+    except Exception:
 
         return []
 
+
+# =========================================================
+# ROAD COLORS
+# =========================================================
 
 def road_color(highway):
 
@@ -472,55 +455,334 @@ def road_color(highway):
         "trunk",
         "primary"
     ]:
-        return "#ff654d"
 
-    if highway in [
+        return "#ff4d4d"
+
+    elif highway in [
         "secondary",
         "tertiary"
     ]:
-        return "#f4ad52"
 
-    return "#71808f"
+        return "#ffad42"
+
+    else:
+
+        return "#777f89"
 
 
 # =========================================================
 # THERMAL PLUME
 # =========================================================
 
-def create_heat_plume(lat, lon, risk):
+def create_heat_plume(
+    lat,
+    lon,
+    risk
+):
 
     points = []
 
-    radius = 0.018
-
     grid = 18
 
-    for i in range(-grid, grid + 1):
+    radius = 0.020
 
-        for j in range(-grid, grid + 1):
+    for i in range(
+        -grid,
+        grid + 1
+    ):
+
+        for j in range(
+            -grid,
+            grid + 1
+        ):
 
             dx = i / grid
+
             dy = j / grid
 
             distance = math.sqrt(
-                dx * dx + dy * dy
+                dx * dx +
+                dy * dy
             )
 
             intensity = math.exp(
-                -(distance ** 2) * 3
+                -(distance ** 2) * 2.5
             )
 
-            intensity *= risk / 100
+            intensity *= (
+                risk / 100
+            )
 
             if intensity > 0.025:
 
-                points.append([
-                    lat + dx * radius,
-                    lon + dy * radius,
-                    intensity
-                ])
+                points.append(
+                    [
+                        lat +
+                        dx * radius,
+
+                        lon +
+                        dy * radius,
+
+                        intensity
+                    ]
+                )
 
     return points
+
+
+# =========================================================
+# RISK COLOR
+# =========================================================
+
+def risk_color(risk):
+
+    if risk >= 75:
+
+        return "#ff2020"
+
+    elif risk >= 50:
+
+        return "#ff8c00"
+
+    elif risk >= 25:
+
+        return "#ffd21f"
+
+    return "#32d74b"
+
+
+# =========================================================
+# ANIMATED INTERVENTION PLUME
+# =========================================================
+
+def add_animated_plume(
+    map_object,
+    lat,
+    lon,
+    before,
+    after
+):
+
+    circles = []
+
+    grid = 15
+
+    radius = 0.020
+
+    for i in range(
+        -grid,
+        grid + 1
+    ):
+
+        for j in range(
+            -grid,
+            grid + 1
+        ):
+
+            dx = i / grid
+
+            dy = j / grid
+
+            distance = math.sqrt(
+                dx * dx +
+                dy * dy
+            )
+
+            intensity = math.exp(
+                -(distance ** 2) * 2.7
+            )
+
+            if intensity < 0.06:
+                continue
+
+            local_before = (
+                before * intensity
+            )
+
+            local_after = (
+                after * intensity
+            )
+
+            point_lat = (
+                lat +
+                dx * radius
+            )
+
+            point_lon = (
+                lon +
+                dy * radius
+            )
+
+            circle = folium.CircleMarker(
+                location=[
+                    point_lat,
+                    point_lon
+                ],
+                radius=18,
+                color="#ff2020",
+                fill=True,
+                fill_color="#ff2020",
+                fill_opacity=(
+                    0.08 +
+                    intensity * 0.30
+                ),
+                weight=0
+            )
+
+            circle.add_to(
+                map_object
+            )
+
+            circles.append(
+                (
+                    circle.get_name(),
+                    local_before,
+                    local_after
+                )
+            )
+
+    # -----------------------------------------------------
+    # JAVASCRIPT ANIMATION
+    # -----------------------------------------------------
+
+    js_circles = "["
+
+    for name, before_value, after_value in circles:
+
+        js_circles += (
+            f'["{name}",'
+            f'{before_value},'
+            f'{after_value}],'
+        )
+
+    js_circles += "]"
+
+    script = f"""
+    <script>
+
+    (function() {{
+
+        const circles =
+            {js_circles};
+
+        const duration = 1800;
+
+        let startTime = null;
+
+        function getColor(risk) {{
+
+            if (risk >= 75) {{
+                return "#ff2020";
+            }}
+
+            if (risk >= 50) {{
+                return "#ff8c00";
+            }}
+
+            if (risk >= 25) {{
+                return "#ffd21f";
+            }}
+
+            return "#32d74b";
+        }}
+
+        function animate(timestamp) {{
+
+            if (startTime === null) {{
+                startTime = timestamp;
+            }}
+
+            let progress =
+                (timestamp - startTime)
+                / duration;
+
+            if (progress > 1) {{
+                progress = 1;
+            }}
+
+            circles.forEach(
+                function(item) {{
+
+                    const circle =
+                        window[item[0]];
+
+                    if (!circle) {{
+                        return;
+                    }}
+
+                    const before =
+                        item[1];
+
+                    const after =
+                        item[2];
+
+                    const current =
+                        before +
+                        (after - before)
+                        * progress;
+
+                    const color =
+                        getColor(current);
+
+                    const opacity =
+                        Math.max(
+                            0.03,
+                            Math.min(
+                                0.48,
+                                current / 150
+                            )
+                        );
+
+                    circle.setStyle({{
+
+                        color: color,
+
+                        fillColor: color,
+
+                        fillOpacity: opacity
+
+                    }});
+
+                }
+            );
+
+            if (progress < 1) {{
+
+                requestAnimationFrame(
+                    animate
+                );
+
+            }} else {{
+
+                setTimeout(
+                    function() {{
+
+                        startTime = null;
+
+                        requestAnimationFrame(
+                            animate
+                        );
+
+                    }},
+                    1000
+                );
+
+            }}
+
+        }}
+
+        requestAnimationFrame(
+            animate
+        );
+
+    }})();
+
+    </script>
+    """
+
+    map_object.get_root().html.add_child(
+        folium.Element(script)
+    )
 
 
 # =========================================================
@@ -535,18 +797,18 @@ def simulate_risk(
 ):
 
     tree_effect = min(
-        (trees / 2000) * 12,
-        12
+        (trees / 2000) * 15,
+        15
     )
 
     roof_effect = min(
-        (roof_area / 50000) * 10,
-        10
+        (roof_area / 50000) * 12,
+        12
     )
 
     shade_effect = min(
-        (shade_structures / 100) * 5,
-        5
+        (shade_structures / 100) * 7,
+        7
     )
 
     reduction = (
@@ -562,275 +824,7 @@ def simulate_risk(
 
 
 # =========================================================
-# ANIMATED INTERVENTION MAP
-# =========================================================
-
-def build_intervention_map(
-    lat,
-    lon,
-    before,
-    after,
-    roads,
-    locality
-):
-
-    m = folium.Map(
-        location=[lat, lon],
-        zoom_start=13,
-        tiles="OpenStreetMap"
-    )
-
-    # -----------------------------------------------------
-    # CREATE MANY THERMAL ZONES
-    # -----------------------------------------------------
-
-    zones = []
-
-    for ring in range(1, 7):
-
-        radius = ring * 150
-
-        for angle in range(0, 360, 45):
-
-            radians = math.radians(angle)
-
-            zone_lat = (
-                lat +
-                math.cos(radians) *
-                radius /
-                111000
-            )
-
-            zone_lon = (
-                lon +
-                math.sin(radians) *
-                radius /
-                (111000 * math.cos(math.radians(lat)))
-            )
-
-            circle = folium.Circle(
-                location=[
-                    zone_lat,
-                    zone_lon
-                ],
-                radius=radius * 0.75,
-                color="#ff2020",
-                fill=True,
-                fill_color="#ff2020",
-                fill_opacity=0.12,
-                weight=0
-            )
-
-            circle.add_to(m)
-
-            zones.append(
-                circle.get_name()
-            )
-
-    # -----------------------------------------------------
-    # CENTRE
-    # -----------------------------------------------------
-
-    centre = folium.Circle(
-        location=[lat, lon],
-        radius=650,
-        color="#ff2020",
-        fill=True,
-        fill_color="#ff2020",
-        fill_opacity=0.20,
-        weight=2
-    )
-
-    centre.add_to(m)
-
-    zones.append(
-        centre.get_name()
-    )
-
-    # -----------------------------------------------------
-    # ROADS
-    # -----------------------------------------------------
-
-    for road in roads:
-
-        geometry = road.get(
-            "geometry",
-            []
-        )
-
-        tags = road.get(
-            "tags",
-            {}
-        )
-
-        highway = tags.get(
-            "highway",
-            "road"
-        )
-
-        name = tags.get(
-            "name",
-            "Unnamed road"
-        )
-
-        if len(geometry) < 2:
-            continue
-
-        coordinates = [
-            [
-                p["lat"],
-                p["lon"]
-            ]
-            for p in geometry
-        ]
-
-        folium.PolyLine(
-            coordinates,
-            color=road_color(highway),
-            weight=3,
-            opacity=0.60,
-            tooltip=name
-        ).add_to(m)
-
-    # -----------------------------------------------------
-    # MARKER
-    # -----------------------------------------------------
-
-    folium.Marker(
-        [lat, lon],
-        tooltip=locality,
-        popup=(
-            f"{locality}<br>"
-            f"Before: {before:.0f}/100<br>"
-            f"After: {after:.0f}/100"
-        )
-    ).add_to(m)
-
-    # -----------------------------------------------------
-    # JAVASCRIPT ANIMATION
-    # -----------------------------------------------------
-
-    zone_names = ",".join(
-        f"window['{z}']"
-        for z in zones
-    )
-
-    script = f"""
-
-    <script>
-
-    const heatZones = [
-        {zone_names}
-    ];
-
-    const beforeRisk = {before};
-    const afterRisk = {after};
-
-    let animationStart = null;
-    const duration = 1800;
-
-    function interpolate(a, b, t) {{
-        return a + (b - a) * t;
-    }}
-
-    function colorForRisk(risk) {{
-
-        if (risk >= 75) {{
-
-            return "#ff1f1f";
-
-        }} else if (risk >= 50) {{
-
-            return "#ff9f1c";
-
-        }} else if (risk >= 25) {{
-
-            return "#ffe14a";
-
-        }} else {{
-
-            return "#37d66b";
-
-        }}
-    }}
-
-    function opacityForRisk(risk) {{
-
-        return 0.10 + (risk / 100) * 0.22;
-
-    }}
-
-    function animate(timestamp) {{
-
-        if (!animationStart) {{
-            animationStart = timestamp;
-        }}
-
-        let progress =
-            (timestamp - animationStart) / duration;
-
-        if (progress > 1) {{
-            progress = 1;
-        }}
-
-        const smooth =
-            progress < 0.5
-            ? 2 * progress * progress
-            : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-
-        const currentRisk =
-            interpolate(
-                beforeRisk,
-                afterRisk,
-                smooth
-            );
-
-        const color =
-            colorForRisk(currentRisk);
-
-        const opacity =
-            opacityForRisk(currentRisk);
-
-        heatZones.forEach(function(zone) {{
-
-            zone.setStyle({{
-                color: color,
-                fillColor: color,
-                fillOpacity: opacity
-            }});
-
-        }});
-
-        if (progress < 1) {{
-
-            requestAnimationFrame(animate);
-
-        }} else {{
-
-            setTimeout(function() {{
-
-                animationStart = null;
-                requestAnimationFrame(animate);
-
-            }}, 700);
-
-        }}
-    }}
-
-    requestAnimationFrame(animate);
-
-    </script>
-    """
-
-    m.get_root().html.add_child(
-        folium.Element(script)
-    )
-
-    return m
-
-
-# =========================================================
-# COST MODEL
+# LIFECYCLE COST
 # =========================================================
 
 def calculate_costs(
@@ -839,15 +833,47 @@ def calculate_costs(
     shade_structures
 ):
 
-    tree_planting = trees * 650
-    tree_first_year = trees * 300
-    tree_maintenance = trees * 250
+    # -------------------------------
+    # TREES
+    # -------------------------------
 
-    roof_installation = roof_area * 300
-    roof_maintenance = roof_area * 30
+    tree_planting = (
+        trees * 650
+    )
 
-    shade_installation = shade_structures * 25000
-    shade_maintenance = shade_structures * 2500
+    tree_first_year = (
+        trees * 300
+    )
+
+    tree_maintenance = (
+        trees * 250
+    )
+
+    # -------------------------------
+    # COOL ROOFS
+    # -------------------------------
+
+    roof_installation = (
+        roof_area * 300
+    )
+
+    roof_maintenance = (
+        roof_area * 30
+    )
+
+    # -------------------------------
+    # SHADE STRUCTURES
+    # -------------------------------
+
+    shade_installation = (
+        shade_structures *
+        25000
+    )
+
+    shade_maintenance = (
+        shade_structures *
+        2500
+    )
 
     implementation = (
         tree_planting +
@@ -866,20 +892,45 @@ def calculate_costs(
         annual_maintenance * 5
     )
 
+    five_year_total = (
+        implementation +
+        five_year_maintenance
+    )
+
     return {
-        "implementation": implementation,
-        "annual_maintenance": annual_maintenance,
-        "five_year_maintenance": five_year_maintenance,
-        "five_year_total":
-            implementation +
+
+        "tree_planting":
+            tree_planting,
+
+        "tree_first_year":
+            tree_first_year,
+
+        "tree_maintenance":
+            tree_maintenance,
+
+        "roof_installation":
+            roof_installation,
+
+        "roof_maintenance":
+            roof_maintenance,
+
+        "shade_installation":
+            shade_installation,
+
+        "shade_maintenance":
+            shade_maintenance,
+
+        "implementation":
+            implementation,
+
+        "annual_maintenance":
+            annual_maintenance,
+
+        "five_year_maintenance":
             five_year_maintenance,
-        "tree_planting": tree_planting,
-        "tree_first_year": tree_first_year,
-        "tree_maintenance": tree_maintenance,
-        "roof_installation": roof_installation,
-        "roof_maintenance": roof_maintenance,
-        "shade_installation": shade_installation,
-        "shade_maintenance": shade_maintenance
+
+        "five_year_total":
+            five_year_total
     }
 
 
@@ -894,27 +945,31 @@ st.write(
 )
 
 st.write(
-    "Locality → Live conditions → Thermal plume → "
-    "Road-level planning → Intervention → Lifecycle cost"
+    "Locality → Live conditions → "
+    "Thermal plume → Road planning → "
+    "Intervention → Lifecycle cost"
 )
 
 st.divider()
 
 
 # =========================================================
-# LOCALITY
+# SIDEBAR
 # =========================================================
 
-st.sidebar.title("📍 Choose Locality")
+st.sidebar.title(
+    "📍 Locality Selection"
+)
 
 selected = st.sidebar.selectbox(
-    "Chennai locality",
+    "Choose Chennai locality",
     list(localities.keys())
 )
 
 data = localities[selected]
 
 lat = data["lat"]
+
 lon = data["lon"]
 
 
@@ -929,16 +984,30 @@ weather = get_live_weather(
 
 if weather:
 
-    live_temperature = weather["temperature_2m"]
-    live_humidity = weather["relative_humidity_2m"]
-    live_apparent = weather["apparent_temperature"]
-    live_wind = weather["wind_speed_10m"]
+    live_temperature = (
+        weather["temperature_2m"]
+    )
+
+    live_humidity = (
+        weather["relative_humidity_2m"]
+    )
+
+    live_apparent = (
+        weather["apparent_temperature"]
+    )
+
+    live_wind = (
+        weather["wind_speed_10m"]
+    )
 
 else:
 
     live_temperature = data["lst"]
+
     live_humidity = 0
+
     live_apparent = data["lst"]
+
     live_wind = 0
 
 
@@ -946,21 +1015,24 @@ else:
 # CURRENT RISK
 # =========================================================
 
-base_heat = normalize(
+heat_satellite_component = normalize(
     data["lst"],
     30,
     45
 )
 
-live_heat = normalize(
+heat_live_component = normalize(
     live_temperature,
     25,
     45
 )
 
 combined_heat = (
-    0.65 * base_heat +
-    0.35 * live_heat
+    0.65 *
+    heat_satellite_component
+    +
+    0.35 *
+    heat_live_component
 )
 
 vegetation_deficit = (
@@ -969,10 +1041,24 @@ vegetation_deficit = (
 )
 
 risk = (
-    0.45 * combined_heat +
-    0.25 * data["built"] +
-    0.20 * vegetation_deficit +
-    0.10 * data["population"]
+
+    0.45 *
+    combined_heat
+
+    +
+
+    0.25 *
+    data["built"]
+
+    +
+
+    0.20 *
+    vegetation_deficit
+
+    +
+
+    0.10 *
+    data["population"]
 )
 
 risk = max(
@@ -980,36 +1066,44 @@ risk = max(
     min(100, risk)
 )
 
+category = get_category(
+    risk
+)
+
 
 # =========================================================
-# METRICS
+# LIVE METRICS
 # =========================================================
 
 st.subheader(
     f"📍 {selected}"
 )
 
-c1, c2, c3, c4 = st.columns(4)
+col1, col2, col3, col4 = st.columns(4)
 
-with c1:
+with col1:
+
     st.metric(
         "🔥 Heat Risk",
         f"{risk:.0f}/100"
     )
 
-with c2:
+with col2:
+
     st.metric(
         "🌡️ Live Temperature",
         f"{live_temperature:.1f} °C"
     )
 
-with c3:
+with col3:
+
     st.metric(
-        "🥵 Feels Like",
+        "🌡️ Feels Like",
         f"{live_apparent:.1f} °C"
     )
 
-with c4:
+with col4:
+
     st.metric(
         "💧 Humidity",
         f"{live_humidity:.0f}%"
@@ -1022,42 +1116,61 @@ st.markdown(
 
     🟢 <b>LIVE ENVIRONMENTAL CONDITIONS</b><br><br>
 
-    Temperature: {live_temperature:.1f} °C<br>
-    Apparent temperature: {live_apparent:.1f} °C<br>
-    Humidity: {live_humidity:.0f}%<br>
-    Wind: {live_wind:.1f} km/h
+    Temperature:
+    {live_temperature:.1f} °C<br>
+
+    Apparent temperature:
+    {live_apparent:.1f} °C<br>
+
+    Humidity:
+    {live_humidity:.0f}%<br>
+
+    Wind:
+    {live_wind:.1f} km/h
 
     </div>
     """,
     unsafe_allow_html=True
 )
 
-
-# =========================================================
-# MAIN MAP
-# =========================================================
-
-st.divider()
-
-st.subheader(
-    "🔥 Local Thermal Plume + Road Network"
+st.caption(
+    "Live atmospheric data: Open-Meteo. "
+    "Satellite surface-temperature data is a separate layer."
 )
 
 st.write(
-    "HeatScape spatializes the selected locality's risk and overlays "
-    "the surrounding OpenStreetMap road network."
+    f"**Current Risk Level: {category}**"
 )
 
-roads = get_osm_roads(
-    lat,
-    lon
+st.divider()
+
+
+# =========================================================
+# MAIN HEAT MAP
+# =========================================================
+
+st.subheader(
+    "🔥 Local Thermal Plume"
 )
 
-m = folium.Map(
-    location=[lat, lon],
+st.write(
+    "HeatScape spatializes the hotspot into a thermal field "
+    "and overlays the local OpenStreetMap road network."
+)
+
+main_map = folium.Map(
+    location=[
+        lat,
+        lon
+    ],
     zoom_start=13,
     tiles="OpenStreetMap"
 )
+
+
+# -------------------------------
+# THERMAL PLUME
+# -------------------------------
 
 plume = create_heat_plume(
     lat,
@@ -1071,8 +1184,21 @@ HeatMap(
     blur=28,
     max_zoom=15,
     min_opacity=0.25
-).add_to(m)
+).add_to(main_map)
 
+
+# -------------------------------
+# ROADS
+# -------------------------------
+
+roads = get_osm_roads(
+    lat,
+    lon
+)
+
+road_layer = folium.FeatureGroup(
+    name="OpenStreetMap Roads"
+)
 
 for road in roads:
 
@@ -1101,31 +1227,75 @@ for road in roads:
 
     coordinates = [
         [
-            p["lat"],
-            p["lon"]
+            point["lat"],
+            point["lon"]
         ]
-        for p in geometry
+        for point in geometry
     ]
 
     folium.PolyLine(
         coordinates,
-        color=road_color(highway),
-        weight=3,
-        opacity=0.65,
-        tooltip=name
-    ).add_to(m)
+        color=road_color(
+            highway
+        ),
+        weight=(
+            4
+            if highway in [
+                "motorway",
+                "trunk",
+                "primary"
+            ]
+            else 2
+        ),
+        opacity=0.75,
+        tooltip=(
+            f"{name} • {highway}"
+        )
+    ).add_to(
+        road_layer
+    )
 
+road_layer.add_to(
+    main_map
+)
+
+
+# -------------------------------
+# LOCALITY MARKER
+# -------------------------------
 
 folium.Marker(
-    [lat, lon],
-    tooltip=selected
-).add_to(m)
+    [
+        lat,
+        lon
+    ],
+    popup=(
+        f"<b>{selected}</b><br>"
+        f"Heat Risk: {risk:.0f}/100"
+    ),
+    tooltip=selected,
+    icon=folium.Icon(
+        color="red",
+        icon="fire"
+    )
+).add_to(main_map)
+
+
+folium.LayerControl().add_to(
+    main_map
+)
 
 
 st_folium(
-    m,
+    main_map,
     width=1200,
-    height=600
+    height=600,
+    returned_objects=[],
+    key=f"main_map_{selected}"
+)
+
+st.caption(
+    "© OpenStreetMap contributors"
 )
 
 
@@ -1137,6 +1307,10 @@ st.divider()
 
 st.subheader(
     "🧬 Heat Fingerprint"
+)
+
+st.write(
+    "What is actually driving the heat risk?"
 )
 
 contributions = get_contributions(
@@ -1153,11 +1327,15 @@ for name, value in sorted(
 ):
 
     st.write(
-        f"**{name} — {value:.1f} risk points**"
+        f"**{name} — "
+        f"{value:.1f} risk points**"
     )
 
     st.progress(
-        min(100, int(value))
+        min(
+            100,
+            int(value)
+        )
     )
 
 
@@ -1165,14 +1343,14 @@ for name, value in sorted(
 # RECOMMENDATION
 # =========================================================
 
+st.divider()
+
 recommendation, reason = get_recommendation(
     data["lst"],
     data["ndvi"],
     data["built"],
     data["population"]
 )
-
-st.divider()
 
 st.subheader(
     "💡 Recommended First Intervention"
@@ -1193,7 +1371,7 @@ st.markdown(
 
 
 # =========================================================
-# SIMULATOR
+# INTERVENTION SIMULATOR
 # =========================================================
 
 st.divider()
@@ -1202,43 +1380,60 @@ st.subheader(
     "🔬 Intervention Simulator"
 )
 
-st.write(
-    "Change the intervention scale and watch the modeled "
-    "risk transform from 🔴 red → 🟠 orange → 🟡 yellow → 🟢 green."
+st.markdown(
+    """
+    **Change the intervention → watch the locality respond.**
+
+    The model recalculates the Heat Risk Index and
+    continuously transitions the thermal field:
+
+    🔴 Critical → 🟠 High → 🟡 Moderate → 🟢 Lower Risk
+    """
 )
 
-c1, c2, c3 = st.columns(3)
 
-with c1:
+col1, col2, col3 = st.columns(3)
+
+
+with col1:
 
     trees = st.slider(
         "🌳 Trees planted",
-        0,
-        2000,
-        500,
-        100
+        min_value=0,
+        max_value=2000,
+        value=500,
+        step=100,
+        key="trees_slider"
     )
 
-with c2:
+
+with col2:
 
     roof_area = st.slider(
-        "🏠 Cool roof area",
-        0,
-        50000,
-        10000,
-        5000
+        "🏠 Cool roof area (m²)",
+        min_value=0,
+        max_value=50000,
+        value=10000,
+        step=5000,
+        key="roof_slider"
     )
 
-with c3:
+
+with col3:
 
     shade_structures = st.slider(
         "🚶 Shade structures",
-        0,
-        100,
-        10,
-        5
+        min_value=0,
+        max_value=100,
+        value=10,
+        step=5,
+        key="shade_slider"
     )
 
+
+# =========================================================
+# NEW RISK
+# =========================================================
 
 new_risk = simulate_risk(
     risk,
@@ -1247,77 +1442,194 @@ new_risk = simulate_risk(
     shade_structures
 )
 
-reduction = risk - new_risk
+reduction = (
+    risk -
+    new_risk
+)
+
+percentage_reduction = (
+
+    reduction / risk * 100
+
+    if risk > 0
+
+    else 0
+)
 
 
 # =========================================================
-# BEFORE AFTER
+# BEFORE / AFTER
 # =========================================================
 
-c1, c2, c3 = st.columns(3)
+st.markdown(
+    "### 📉 Intervention Result"
+)
 
-with c1:
+col1, col2, col3 = st.columns(3)
+
+
+with col1:
 
     st.metric(
         "🔴 BEFORE",
         f"{risk:.0f}/100"
     )
 
-with c2:
+
+with col2:
 
     st.metric(
         "🟢 AFTER",
-        f"{new_risk:.0f}/100"
+        f"{new_risk:.0f}/100",
+        delta=f"-{reduction:.1f}"
     )
 
-with c3:
+
+with col3:
 
     st.metric(
-        "📉 REDUCTION",
-        f"{reduction:.1f} points"
+        "📉 IMPROVEMENT",
+        f"{percentage_reduction:.1f}%"
     )
 
 
 # =========================================================
-# ANIMATED MAP
+# INTERVENTION MAP
 # =========================================================
 
 st.subheader(
-    "🗺️ Live Intervention Simulation"
+    "🗺️ Intervention Impact Map"
 )
 
 st.write(
-    "The thermal field continuously transitions toward the "
-    "simulated post-intervention state."
+    "The thermal field continuously transitions "
+    "as the intervention is applied."
 )
 
-impact_map = build_intervention_map(
+impact_map = folium.Map(
+    location=[
+        lat,
+        lon
+    ],
+    zoom_start=13,
+    tiles="OpenStreetMap"
+)
+
+
+# -------------------------------
+# ANIMATED PLUME
+# -------------------------------
+
+add_animated_plume(
+    impact_map,
     lat,
     lon,
     risk,
-    new_risk,
-    roads,
-    selected
+    new_risk
 )
 
-# IMPORTANT:
-# Use direct HTML rendering here instead of st_folium.
-# This allows the browser animation to actually run.
 
-components.html(
-    impact_map.get_root().render(),
-    height=620,
-    scrolling=False
+# -------------------------------
+# ROADS
+# -------------------------------
+
+for road in roads:
+
+    geometry = road.get(
+        "geometry",
+        []
+    )
+
+    tags = road.get(
+        "tags",
+        {}
+    )
+
+    highway = tags.get(
+        "highway",
+        "road"
+    )
+
+    name = tags.get(
+        "name",
+        "Unnamed road"
+    )
+
+    if len(geometry) < 2:
+        continue
+
+    coordinates = [
+        [
+            point["lat"],
+            point["lon"]
+        ]
+        for point in geometry
+    ]
+
+    folium.PolyLine(
+        coordinates,
+        color=road_color(
+            highway
+        ),
+        weight=3,
+        opacity=0.65,
+        tooltip=name
+    ).add_to(
+        impact_map
+    )
+
+
+# -------------------------------
+# MARKER
+# -------------------------------
+
+folium.Marker(
+    [
+        lat,
+        lon
+    ],
+    popup=(
+        f"<b>{selected}</b><br>"
+        f"Before: {risk:.0f}/100<br>"
+        f"After: {new_risk:.0f}/100<br>"
+        f"Reduction: {reduction:.1f}"
+    ),
+    tooltip="Intervention impact"
+).add_to(
+    impact_map
+)
+
+
+# -------------------------------
+# DISPLAY
+# -------------------------------
+
+st_folium(
+    impact_map,
+    width=1200,
+    height=600,
+    returned_objects=[],
+    key=(
+        f"impact_map_"
+        f"{selected}_"
+        f"{trees}_"
+        f"{roof_area}_"
+        f"{shade_structures}"
+    )
 )
 
 st.caption(
-    "Animation represents a modeled change in Heat Risk. "
-    "It is not a measured satellite temperature change."
+    "🔴 Critical → 🟠 High → 🟡 Moderate → 🟢 Lower risk"
+)
+
+st.caption(
+    "The colour transition is a modeled intervention "
+    "visualization, not measured satellite temperature change."
 )
 
 
 # =========================================================
-# COST
+# COST ESTIMATION
 # =========================================================
 
 st.divider()
@@ -1327,9 +1639,10 @@ st.subheader(
 )
 
 st.write(
-    "HeatScape estimates not only installation, but also "
-    "the recurring cost required to keep the intervention working."
+    "HeatScape considers both implementation and "
+    "the cost of keeping the intervention functional."
 )
+
 
 costs = calculate_costs(
     trees,
@@ -1337,26 +1650,30 @@ costs = calculate_costs(
     shade_structures
 )
 
-c1, c2, c3 = st.columns(3)
 
-with c1:
+col1, col2, col3 = st.columns(3)
+
+
+with col1:
 
     st.metric(
         "Initial Implementation",
         f"₹{costs['implementation']:,.0f}"
     )
 
-with c2:
+
+with col2:
 
     st.metric(
         "Annual Maintenance",
         f"₹{costs['annual_maintenance']:,.0f}"
     )
 
-with c3:
+
+with col3:
 
     st.metric(
-        "5-Year Lifecycle Cost",
+        "5-Year Total",
         f"₹{costs['five_year_total']:,.0f}"
     )
 
@@ -1368,38 +1685,52 @@ st.markdown(
     ### 🌳 Trees
 
     Planting + establishment:
-    **₹{costs['tree_planting'] + costs['tree_first_year']:,.0f}**
+    **₹{costs['tree_planting'] +
+    costs['tree_first_year']:,.0f}**
 
-    Annual watering, fertilizer, pruning and care:
+    Annual watering / fertilizer /
+    pruning / care:
+
     **₹{costs['tree_maintenance']:,.0f} / year**
+
+    ---
 
     ### 🏠 Cool Roofs
 
     Installation:
+
     **₹{costs['roof_installation']:,.0f}**
 
     Annual upkeep:
+
     **₹{costs['roof_maintenance']:,.0f} / year**
+
+    ---
 
     ### 🚶 Shade Structures
 
     Installation:
+
     **₹{costs['shade_installation']:,.0f}**
 
     Annual maintenance:
+
     **₹{costs['shade_maintenance']:,.0f} / year**
 
     ---
 
-    ### 5-YEAR VIEW
+    ### 💰 LIFECYCLE VIEW
 
     Initial implementation:
+
     **₹{costs['implementation']:,.0f}**
 
     5-year maintenance:
+
     **₹{costs['five_year_maintenance']:,.0f}**
 
-    ## Total:
+    ### 5-YEAR TOTAL
+
     **₹{costs['five_year_total']:,.0f}**
 
     </div>
@@ -1408,9 +1739,77 @@ st.markdown(
 )
 
 st.caption(
-    "Planning estimates only. Replace unit rates with approved "
-    "GCC/PWD schedule or tender rates before real-world deployment."
+    "Planning estimates only. Replace these assumptions "
+    "with approved GCC/PWD schedule or tender rates "
+    "for real implementation."
 )
+
+
+# =========================================================
+# BUDGET OPTIMIZER
+# =========================================================
+
+st.divider()
+
+st.subheader(
+    "💸 Budget Optimizer"
+)
+
+st.write(
+    "How much cooling can be achieved with a limited "
+    "public budget?"
+)
+
+budget = st.number_input(
+    "Available budget (₹)",
+    min_value=100000,
+    max_value=100000000,
+    value=10000000,
+    step=500000
+)
+
+
+if budget > 0:
+
+    possible_trees = int(
+        budget / 650
+    )
+
+    possible_roofs = int(
+        budget / 300
+    )
+
+    possible_shade = int(
+        budget / 25000
+    )
+
+    st.write(
+        f"With **₹{budget:,.0f}**, "
+        "theoretical maximum deployment is:"
+    )
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+
+        st.metric(
+            "🌳 Trees",
+            f"{possible_trees:,}"
+        )
+
+    with col2:
+
+        st.metric(
+            "🏠 Cool Roof Area",
+            f"{possible_roofs:,} m²"
+        )
+
+    with col3:
+
+        st.metric(
+            "🚶 Shade Structures",
+            f"{possible_shade:,}"
+        )
 
 
 # =========================================================
@@ -1423,39 +1822,63 @@ with st.expander(
     "📊 Data & Methodology"
 ):
 
-    st.write("""
-    ### Live Data
+    st.write(
+        """
+        ### Current live layer
 
-    • Open-Meteo → current atmospheric conditions
+        • Open-Meteo → current temperature,
+        humidity, apparent temperature and wind
 
-    • OpenStreetMap → road network and road classification
+        • OpenStreetMap → road network and
+        road classification
 
-    ### Heat Model
+        ### Heat Risk Model
 
-    Heat Risk =
-    0.45 × Heat +
-    0.25 × Built-up +
-    0.20 × Vegetation Deficit +
-    0.10 × Population Exposure
+        Heat Risk =
 
-    ### Planned Satellite Layer
+        0.45 × Heat +
 
-    • Landsat 8/9 → Surface Temperature
+        0.25 × Built-up +
 
-    • Sentinel-2 → NDVI
+        0.20 × Vegetation Deficit +
 
-    • Copernicus land cover → Built-up / land cover
+        0.10 × Population Exposure
 
-    • WorldPop → Population exposure
+        ### Planned satellite layer
 
-    ### Simulation
+        • Landsat 8/9 → Surface Temperature
 
-    The intervention simulator estimates a change in the
-    Heat Risk Index based on the scale of the intervention.
+        • Sentinel-2 → NDVI
 
-    The animated thermal field visualizes this modeled change.
-    """)
+        • Copernicus land cover → Built-up
+
+        • WorldPop → Population exposure
+
+        ### Important
+
+        The current thermal plume is a
+        spatialized model.
+
+        It will eventually be replaced by
+        satellite-derived LST for each
+        spatial grid cell.
+        """
+    )
+
+
+# =========================================================
+# FOOTER
+# =========================================================
+
+st.divider()
 
 st.caption(
-    f"HeatScape • {datetime.now().strftime('%d %b %Y, %H:%M')}"
+    "HeatScape • Urban Heat Reduction Planner"
+)
+
+st.caption(
+    "Last interface refresh: "
+    + datetime.now().strftime(
+        "%d %b %Y • %H:%M:%S"
+    )
 )

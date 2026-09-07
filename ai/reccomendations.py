@@ -1,38 +1,34 @@
-def recommend(data):
-    heat = data["heat"]
-    vegetation = data["vegetation"]
-    built_up = data["built_up"]
-    population = data["population"]
-    road_density = data.get("road_density", 0)
+def get_recommendation(heat, vegetation, built_up, population):
 
-    recommendations = []
+    scores = {
+        "Tree Planting / Green Corridor": 0,
+        "Cool Roofs": 0,
+        "Roadside Shade": 0
+    }
 
-    if heat > 70 and vegetation < 30:
-        recommendations.append({
-            "name": "Tree Planting / Green Corridor",
-            "reason": "High heat combined with low vegetation.",
-            "priority": "High"
-        })
+    if vegetation < 30:
+        scores["Tree Planting / Green Corridor"] += 40
 
-    if heat > 70 and built_up > 70:
-        recommendations.append({
-            "name": "Cool Roofs",
-            "reason": "High heat and high built-up intensity.",
-            "priority": "High"
-        })
-
-    if heat > 70 and road_density > 60:
-        recommendations.append({
-            "name": "Roadside Shade",
-            "reason": "High heat and high road exposure.",
-            "priority": "Medium"
-        })
+    if built_up > 70:
+        scores["Cool Roofs"] += 40
 
     if heat > 70 and population > 70:
-        recommendations.append({
-            "name": "Priority Cooling Intervention",
-            "reason": "High heat affects a large population.",
-            "priority": "High"
-        })
+        scores["Roadside Shade"] += 20
 
-    return recommendations
+    if heat > 70:
+        scores["Cool Roofs"] += 20
+
+    recommendation = max(scores, key=scores.get)
+
+    reasons = {
+        "Tree Planting / Green Corridor":
+            "Low vegetation is the dominant cooling deficit.",
+
+        "Cool Roofs":
+            "High built-up intensity is a major contributor to heat.",
+
+        "Roadside Shade":
+            "High heat and population exposure make shaded public space a priority."
+    }
+
+    return recommendation, reasons[recommendation]

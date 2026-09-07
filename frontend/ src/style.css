@@ -1,1 +1,130 @@
+* {
+  box-sizing: border-box;
+}
 
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #07111f;
+  color: white;
+}
+
+.app {
+  min-height: 100vh;
+}
+
+header {
+  height: 80px;
+  padding: 0 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #243044;
+}
+
+h1 {
+  margin: 0;
+  font-size: 26px;
+}
+
+header p {
+  margin: 4px 0 0;
+  color: #94a3b8;
+}
+
+.status {
+  color: #5ee6a8;
+}
+
+main {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  height: calc(100vh - 80px);
+}
+
+.map-section {
+  padding: 20px;
+}
+
+.map-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.map {
+  height: calc(100% - 60px);
+  border-radius: 15px;
+}
+
+.legend {
+  display: flex;
+  gap: 15px;
+  font-size: 12px;
+}
+
+aside {
+  padding: 25px;
+  border-left: 1px solid #243044;
+  overflow-y: auto;
+}
+
+.risk {
+  padding: 20px;
+  border-radius: 15px;
+  background: #34151a;
+  margin: 20px 0;
+}
+
+.risk span,
+.risk small {
+  display: block;
+  color: #fca5a5;
+}
+
+.risk strong {
+  display: block;
+  font-size: 42px;
+  margin: 8px 0;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.stats div {
+  padding: 15px;
+  border-radius: 12px;
+  background: #111d2d;
+}
+
+.stats span {
+  display: block;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.stats strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 20px;
+}
+
+.recommendation {
+  padding: 15px;
+  margin: 10px 0;
+  background: #111d2d;
+  border-radius: 12px;
+  border-left: 3px solid #5ee6a8;
+}
+
+.recommendation p {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.empty {
+  color: #94a3b8;
+}

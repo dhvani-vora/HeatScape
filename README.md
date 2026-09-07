@@ -37,7 +37,7 @@ HeatScape combines urban environmental data with AI-assisted analysis to:
 - Python
 - FastAPI
 
-### AI / Data
+### AI/Data
 - Python
 - Machine Learning
 - Geospatial/environmental data

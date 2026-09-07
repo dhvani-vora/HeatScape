@@ -1,1 +1,38 @@
-
+[
+  {
+    "id": 1,
+    "lat": 13.0827,
+    "lng": 80.2707,
+    "lst": 41.2,
+    "heat": 82,
+    "ndvi": 18,
+    "vegetation": 18,
+    "built_up": 78,
+    "population": 85,
+    "road_density": 72
+  },
+  {
+    "id": 2,
+    "lat": 13.0604,
+    "lng": 80.2496,
+    "lst": 39.8,
+    "heat": 71,
+    "ndvi": 27,
+    "vegetation": 27,
+    "built_up": 74,
+    "population": 78,
+    "road_density": 65
+  },
+  {
+    "id": 3,
+    "lat": 13.1067,
+    "lng": 80.2905,
+    "lst": 37.1,
+    "heat": 56,
+    "ndvi": 44,
+    "vegetation": 44,
+    "built_up": 61,
+    "population": 63,
+    "road_density": 48
+  }
+]

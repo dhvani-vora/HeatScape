@@ -30,6 +30,7 @@ HeatScape combines urban environmental data with AI-assisted analysis to:
 
 ### Frontend
 - React
+- Streamlit
 - Vite
 - Interactive maps
 

@@ -1,16 +1,13 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import folium
 from folium.plugins import HeatMap
 from streamlit_folium import st_folium
-import requests
+import streamlit.components.v1 as components
 import math
-import json
 
-
-# =========================================================
+# ============================================================
 # PAGE
-# =========================================================
+# ============================================================
 
 st.set_page_config(
     page_title="HeatScape",
@@ -18,290 +15,289 @@ st.set_page_config(
     layout="wide"
 )
 
-
-# =========================================================
-# STYLE
-# =========================================================
+# ============================================================
+# CSS
+# ============================================================
 
 st.markdown("""
 <style>
 
 .stApp {
-    background: #080c11;
+    background: #07110d;
+    color: #f4f7f5;
 }
 
 .block-container {
     padding-top: 1.5rem;
-    padding-bottom: 3rem;
+    max-width: 1450px;
 }
 
-h1, h2, h3 {
-    color: white;
+h1 {
+    font-size: 42px !important;
+    margin-bottom: 0px !important;
 }
 
-p, label {
-    color: #c3cad3;
+h2 {
+    font-size: 28px !important;
+}
+
+h3 {
+    font-size: 20px !important;
+}
+
+.metric-card {
+    background: #101c17;
+    border: 1px solid #26382f;
+    border-radius: 14px;
+    padding: 18px;
+    text-align: center;
+}
+
+.metric-title {
+    color: #9eb0a6;
+    font-size: 13px;
+}
+
+.metric-value {
+    font-size: 30px;
+    font-weight: 700;
+}
+
+.small {
+    color: #9eb0a6;
+    font-size: 13px;
 }
 
 .recommendation {
-    background: #102218;
-    border: 1px solid #2e7145;
-    border-radius: 15px;
-    padding: 20px;
-}
-
-.livebox {
-    background: #101a24;
-    border: 1px solid #24455e;
-    border-radius: 15px;
+    background: #11271d;
+    border-left: 5px solid #38d996;
     padding: 18px;
+    border-radius: 10px;
 }
 
-.costbox {
-    background: #121820;
-    border: 1px solid #303a47;
-    border-radius: 15px;
-    padding: 20px;
+.before {
+    color: #ff5252;
+    font-size: 34px;
+    font-weight: bold;
+}
+
+.after {
+    color: #39d98a;
+    font-size: 34px;
+    font-weight: bold;
+}
+
+.big-green {
+    color: #39d98a;
+    font-size: 22px;
+    font-weight: bold;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
 
-# =========================================================
-# CHENNAI LOCALITIES
-# =========================================================
+# ============================================================
+# LOCALITY DATA
+# ============================================================
 
 LOCALITIES = {
 
     "Washermanpet": {
-        "lat": 13.1150,
-        "lon": 80.2800,
-        "lst": 41.1,
-        "ndvi": 0.15,
-        "built": 87,
+        "lat": 13.116,
+        "lon": 80.279,
+        "lst": 41.6,
+        "ndvi": 0.14,
+        "built": 84,
         "population": 91
     },
 
     "Royapuram": {
-        "lat": 13.1167,
-        "lon": 80.2947,
-        "lst": 41.0,
-        "ndvi": 0.16,
-        "built": 86,
+        "lat": 13.115,
+        "lon": 80.294,
+        "lst": 41.4,
+        "ndvi": 0.15,
+        "built": 82,
         "population": 89
     },
 
     "Perambur": {
-        "lat": 13.1167,
-        "lon": 80.2333,
-        "lst": 40.5,
-        "ndvi": 0.20,
-        "built": 82,
-        "population": 87
-    },
-
-    "Ambattur": {
-        "lat": 13.1143,
-        "lon": 80.1548,
-        "lst": 40.2,
-        "ndvi": 0.23,
-        "built": 79,
-        "population": 76
-    },
-
-    "Avadi": {
-        "lat": 13.1147,
-        "lon": 80.1017,
-        "lst": 39.7,
-        "ndvi": 0.31,
-        "built": 70,
-        "population": 73
-    },
-
-    "Anna Nagar": {
-        "lat": 13.0850,
-        "lon": 80.2101,
-        "lst": 39.7,
-        "ndvi": 0.25,
-        "built": 82,
-        "population": 78
-    },
-
-    "Nungambakkam": {
-        "lat": 13.0569,
-        "lon": 80.2425,
-        "lst": 40.0,
-        "ndvi": 0.23,
-        "built": 84,
-        "population": 82
-    },
-
-    "T Nagar": {
-        "lat": 13.0418,
-        "lon": 80.2341,
-        "lst": 40.4,
-        "ndvi": 0.20,
-        "built": 88,
+        "lat": 13.116,
+        "lon": 80.233,
+        "lst": 40.8,
+        "ndvi": 0.19,
+        "built": 78,
         "population": 86
     },
 
-    "Mylapore": {
-        "lat": 13.0339,
-        "lon": 80.2676,
-        "lst": 39.2,
-        "ndvi": 0.29,
-        "built": 80,
-        "population": 83
+    "Ambattur": {
+        "lat": 13.114,
+        "lon": 80.154,
+        "lst": 40.7,
+        "ndvi": 0.20,
+        "built": 79,
+        "population": 78
     },
 
-    "Guindy": {
-        "lat": 13.0067,
-        "lon": 80.2206,
-        "lst": 39.6,
-        "ndvi": 0.31,
-        "built": 75,
-        "population": 75
-    },
-
-    "Adyar": {
-        "lat": 13.0063,
-        "lon": 80.2574,
-        "lst": 38.1,
-        "ndvi": 0.43,
-        "built": 64,
-        "population": 68
-    },
-
-    "Velachery": {
-        "lat": 12.9750,
-        "lon": 80.2212,
+    "Avadi": {
+        "lat": 13.106,
+        "lon": 80.096,
         "lst": 39.5,
-        "ndvi": 0.29,
+        "ndvi": 0.28,
+        "built": 68,
+        "population": 72
+    },
+
+    "Anna Nagar": {
+        "lat": 13.085,
+        "lon": 80.210,
+        "lst": 40.0,
+        "ndvi": 0.25,
         "built": 76,
         "population": 80
     },
 
-    "Perungudi": {
-        "lat": 12.9600,
-        "lon": 80.2400,
+    "Nungambakkam": {
+        "lat": 13.056,
+        "lon": 80.242,
         "lst": 40.1,
         "ndvi": 0.24,
-        "built": 79,
-        "population": 74
+        "built": 77,
+        "population": 79
+    },
+
+    "T Nagar": {
+        "lat": 13.041,
+        "lon": 80.234,
+        "lst": 40.3,
+        "ndvi": 0.21,
+        "built": 83,
+        "population": 87
+    },
+
+    "Mylapore": {
+        "lat": 13.033,
+        "lon": 80.269,
+        "lst": 39.4,
+        "ndvi": 0.29,
+        "built": 73,
+        "population": 76
+    },
+
+    "Guindy": {
+        "lat": 13.006,
+        "lon": 80.220,
+        "lst": 39.0,
+        "ndvi": 0.34,
+        "built": 66,
+        "population": 70
+    },
+
+    "Adyar": {
+        "lat": 13.006,
+        "lon": 80.257,
+        "lst": 38.6,
+        "ndvi": 0.39,
+        "built": 61,
+        "population": 68
+    },
+
+    "Velachery": {
+        "lat": 12.981,
+        "lon": 80.218,
+        "lst": 39.1,
+        "ndvi": 0.31,
+        "built": 69,
+        "population": 77
+    },
+
+    "Perungudi": {
+        "lat": 12.960,
+        "lon": 80.245,
+        "lst": 38.9,
+        "ndvi": 0.33,
+        "built": 67,
+        "population": 71
     },
 
     "Sholinganallur": {
-        "lat": 12.9010,
-        "lon": 80.2279,
-        "lst": 38.8,
-        "ndvi": 0.34,
-        "built": 69,
-        "population": 72
+        "lat": 12.901,
+        "lon": 80.227,
+        "lst": 38.0,
+        "ndvi": 0.40,
+        "built": 62,
+        "population": 69
     },
 
     "Tambaram": {
-        "lat": 12.9249,
-        "lon": 80.1000,
-        "lst": 37.8,
-        "ndvi": 0.42,
-        "built": 63,
-        "population": 67
+        "lat": 12.925,
+        "lon": 80.127,
+        "lst": 37.4,
+        "ndvi": 0.46,
+        "built": 58,
+        "population": 62
     }
 }
 
 
-# =========================================================
-# RISK
-# =========================================================
+# ============================================================
+# HEAT RISK ENGINE
+# ============================================================
 
 def normalize(value, minimum, maximum):
 
-    if maximum == minimum:
-        return 0
+    result = ((value - minimum) / (maximum - minimum)) * 100
 
-    value = (
-        (value - minimum)
-        / (maximum - minimum)
-    ) * 100
-
-    return max(0, min(100, value))
+    return max(0, min(100, result))
 
 
-def calculate_risk(
-    lst,
-    ndvi,
-    built,
-    population
-):
+def calculate_risk(lst, ndvi, built, population):
 
-    heat = normalize(
-        lst,
-        30,
-        45
-    )
+    heat = normalize(lst, 30, 45)
 
-    vegetation_deficit = (
-        100 - ndvi * 100
-    )
-
-    return max(
+    vegetation_deficit = max(
         0,
-        min(
-            100,
-            (
-                0.45 * heat
-                + 0.25 * built
-                + 0.20 * vegetation_deficit
-                + 0.10 * population
-            )
-        )
+        min(100, 100 - ndvi * 100)
     )
 
+    population_exposure = population
 
-def risk_category(risk):
+    risk = (
+        0.45 * heat +
+        0.25 * built +
+        0.20 * vegetation_deficit +
+        0.10 * population_exposure
+    )
 
-    if risk >= 75:
-        return "Critical"
-
-    if risk >= 50:
-        return "High"
-
-    if risk >= 25:
-        return "Moderate"
-
-    return "Low"
+    return max(0, min(100, risk))
 
 
-# =========================================================
+# ============================================================
 # CONTRIBUTIONS
-# =========================================================
+# ============================================================
 
 def get_contributions(data):
 
-    heat = normalize(
-        data["lst"],
-        30,
-        45
-    )
+    heat = normalize(data["lst"], 30, 45)
 
-    vegetation_deficit = (
-        100 - data["ndvi"] * 100
+    vegetation_deficit = max(
+        0,
+        min(100, 100 - data["ndvi"] * 100)
     )
 
     return {
         "Surface Heat": 0.45 * heat,
-        "Built-up Area": 0.25 * data["built"],
+        "Built-up Intensity": 0.25 * data["built"],
         "Vegetation Deficit": 0.20 * vegetation_deficit,
         "Population Exposure": 0.10 * data["population"]
     }
 
 
-# =========================================================
+# ============================================================
 # RECOMMENDATION
-# =========================================================
+# ============================================================
 
-def get_recommendation(data):
+def recommendation(data):
 
     contributions = get_contributions(data)
 
@@ -313,416 +309,237 @@ def get_recommendation(data):
     if dominant == "Vegetation Deficit":
 
         return (
-            "🌳 Tree Planting / Green Corridor",
-            "Vegetation deficit is the dominant heat-risk contributor."
+            "Tree planting / Green Corridor",
+            "Vegetation deficit is the dominant contributor. "
+            "Increasing tree cover and connected green space "
+            "is the strongest first intervention."
         )
 
-    if dominant == "Built-up Area":
+    if dominant == "Built-up Intensity":
 
         return (
-            "🏠 Cool Roofs + Shade Structures",
-            "Dense built-up surfaces are the dominant contributor."
+            "Cool Roofs",
+            "Built-up intensity is the dominant contributor. "
+            "Reflective or cool roofs can reduce heat absorption "
+            "across large built surfaces."
         )
 
-    if dominant == "Population Exposure":
+    if dominant == "Surface Heat":
 
         return (
-            "🚶 Shaded Public Corridor",
-            "High population exposure makes public cooling infrastructure the priority."
+            "Combined Green + Shade Intervention",
+            "Surface heat is the dominant contributor. "
+            "A combination of vegetation and pedestrian shade "
+            "is recommended."
         )
 
     return (
-        "🌳 Green Corridor + Cool Roofs",
-        "Surface heat is the dominant contributor."
+        "Targeted Cooling Corridor",
+        "Population exposure is significant. "
+        "Prioritize cooling interventions around highly "
+        "used public areas."
     )
 
 
-# =========================================================
-# LIVE WEATHER
-# =========================================================
+# ============================================================
+# INTERVENTION SIMULATOR
+# ============================================================
 
-@st.cache_data(ttl=600)
-def get_weather(lat, lon):
-
-    url = (
-        "https://api.open-meteo.com/v1/forecast"
-        f"?latitude={lat}"
-        f"&longitude={lon}"
-        "&current="
-        "temperature_2m,"
-        "relative_humidity_2m,"
-        "apparent_temperature,"
-        "wind_speed_10m"
-    )
-
-    try:
-
-        response = requests.get(
-            url,
-            timeout=10
-        )
-
-        response.raise_for_status()
-
-        return response.json()["current"]
-
-    except Exception:
-
-        return None
-
-
-# =========================================================
-# OPENSTREETMAP ROADS
-# =========================================================
-
-@st.cache_data(ttl=3600)
-def get_roads(lat, lon):
-
-    query = f"""
-    [out:json][timeout:25];
-
-    way["highway"]
-    (around:1800,{lat},{lon});
-
-    out geom;
-    """
-
-    try:
-
-        response = requests.post(
-            "https://overpass-api.de/api/interpreter",
-            data=query,
-            headers={
-                "User-Agent": "HeatScape"
-            },
-            timeout=30
-        )
-
-        response.raise_for_status()
-
-        return response.json().get(
-            "elements",
-            []
-        )
-
-    except Exception:
-
-        return []
-
-
-def road_color(highway):
-
-    if highway in [
-        "motorway",
-        "trunk",
-        "primary"
-    ]:
-        return "#ff4b4b"
-
-    if highway in [
-        "secondary",
-        "tertiary"
-    ]:
-        return "#ffae42"
-
-    return "#687383"
-
-# =========================================================
-# STREET NETWORK DIAGNOSIS & INTERVENTION ASSIGNMENT
-# =========================================================
-
-def diagnose_roads(roads):
-    """
-    Analyzes real OpenStreetMap roads in the locality,
-    identifies road-specific heat issues, and assigns feasible interventions.
-    """
-    diagnosed = []
-    seen_names = set()
-
-    for r in roads:
-        tags = r.get("tags", {})
-        name = tags.get("name")
-        highway = tags.get("highway", "road")
-
-        if not name or name in seen_names or len(name) < 3:
-            continue
-        seen_names.add(name)
-
-        # 1. Wide Arterial Roads -> Avenue Trees & Transit Shade
-        if highway in ["primary", "trunk", "secondary"]:
-            issue = "Wide unshaded asphalt corridor radiating high thermal mass onto commuters."
-            action = "🌳 Avenue Tree Canopy + Shaded Bus Stops"
-            trees_possible = 180
-            roof_sqm_possible = 0
-            shade_possible = 4
-            feasibility = "Road width > 16m allows dual-verge native tree planting."
-
-        # 2. Narrow Commercial Streets / Canyons -> Cool Roofs on Adjacent Buildings
-        elif highway in ["pedestrian", "living_street", "service"] or "Bazaar" in name or "Street" in name:
-            issue = "Narrow urban canyon trap. Street is too narrow for tree planting."
-            action = "🏠 Cool Roofs on Adjacent Building Parcels"
-            trees_possible = 0
-            roof_sqm_possible = 8500
-            shade_possible = 6
-            feasibility = "Zero unpaved soil for trees; high-albedo rooftop retrofits are the only feasible cooling mechanism."
-
-        # 3. Residential & Collector Streets -> Permeable Pavement & Street Shading
-        else:
-            issue = "Moderate asphalt heat retention and lack of pedestrian shade."
-            action = "🚶 Tensile Shade Canopies & Pocket Greening"
-            trees_possible = 40
-            roof_sqm_possible = 3000
-            shade_possible = 2
-            feasibility = "Suitable for light canopy and tensile fabric over pedestrian crossings."
-
-        diagnosed.append({
-            "name": name,
-            "highway": highway,
-            "issue": issue,
-            "action": action,
-            "trees": trees_possible,
-            "roof_sqm": roof_sqm_possible,
-            "shade": shade_possible,
-            "feasibility": feasibility
-        })
-
-    return diagnosed[:8] # Return top 8 prominent named streets in the locality
-
-
-# =========================================================
-# THERMAL PLUME FOR MAIN MAP
-# =========================================================
-
-def thermal_points(
-    lat,
-    lon,
-    risk
+def simulate_intervention(
+    original_risk,
+    trees,
+    roof_area,
+    shade_structures
 ):
+
+    # --------------------------------------------------------
+    # IMPORTANT:
+    # These effects are deliberately strong enough to make
+    # the simulator visibly respond during a demo.
+    # They are MODELLED risk-index effects, not measured
+    # temperature reductions.
+    # --------------------------------------------------------
+
+    tree_effect = (trees / 2000.0) * 18.0
+
+    roof_effect = (roof_area / 50000.0) * 14.0
+
+    shade_effect = (shade_structures / 100.0) * 8.0
+
+    total_reduction = (
+        tree_effect +
+        roof_effect +
+        shade_effect
+    )
+
+    total_reduction = min(
+        total_reduction,
+        original_risk * 0.75
+    )
+
+    new_risk = max(
+        0,
+        original_risk - total_reduction
+    )
+
+    return new_risk, total_reduction
+
+
+# ============================================================
+# RISK COLOR
+# ============================================================
+
+def risk_color(risk):
+
+    if risk >= 75:
+        return "#ff3030"
+
+    if risk >= 50:
+        return "#ff9f1c"
+
+    if risk >= 25:
+        return "#ffe45c"
+
+    return "#35d07f"
+
+
+# ============================================================
+# THERMAL PLUME
+# ============================================================
+
+def generate_thermal_points(lat, lon, risk):
 
     points = []
 
-    grid = 20
+    radius = 0.025
 
-    for i in range(
-        -grid,
-        grid + 1
-    ):
+    for y in range(-10, 11):
 
-        for j in range(
-            -grid,
-            grid + 1
-        ):
-
-            x = i / grid
-            y = j / grid
+        for x in range(-10, 11):
 
             distance = math.sqrt(
                 x * x + y * y
             )
 
             intensity = math.exp(
-                -(distance ** 2) * 3
+                -(distance ** 2) / 35
             )
 
-            if intensity > 0.03:
+            intensity *= risk / 100
 
-                points.append(
-                    [
-                        lat + x * 0.022,
-                        lon + y * 0.022,
-                        intensity * risk / 100
-                    ]
-                )
+            if intensity > 0.04:
+
+                p_lat = lat + (y / 10) * radius
+
+                p_lon = lon + (x / 10) * radius
+
+                points.append([
+                    p_lat,
+                    p_lon,
+                    intensity
+                ])
 
     return points
 
 
-# =========================================================
-# INTERVENTION SIMULATION
-# =========================================================
+# ============================================================
+# MAIN CHENNAI MAP
+# ============================================================
 
-def simulate_intervention(
-    risk,
-    trees,
-    roof_area,
-    shade
-):
+def create_main_map(selected):
 
-    tree_effect = (
-        trees / 2000
-    ) * 18
+    data = LOCALITIES[selected]
 
-    roof_effect = (
-        roof_area / 50000
-    ) * 14
-
-    shade_effect = (
-        shade / 100
-    ) * 8
-
-    reduction = (
-        tree_effect
-        + roof_effect
-        + shade_effect
+    m = folium.Map(
+        location=[13.05, 80.22],
+        zoom_start=11,
+        tiles="OpenStreetMap",
+        control_scale=True
     )
 
-    reduction = min(
-        reduction,
-        40
-    )
+    # Heat plumes
+    heat_points = []
 
-    new_risk = max(
-        0,
-        risk - reduction
-    )
+    for name, location in LOCALITIES.items():
 
-    return new_risk
+        risk = calculate_risk(
+            location["lst"],
+            location["ndvi"],
+            location["built"],
+            location["population"]
+        )
 
+        pts = generate_thermal_points(
+            location["lat"],
+            location["lon"],
+            risk
+        )
 
-# =========================================================
-# COST
-# =========================================================
+        heat_points.extend(pts)
 
-def calculate_cost(
-    trees,
-    roof_area,
-    shade
-):
+    HeatMap(
+        heat_points,
+        radius=25,
+        blur=30,
+        min_opacity=0.25,
+        max_zoom=13
+    ).add_to(m)
 
-    tree_install = (
-        trees * 650
-    )
+    # Locality markers
+    for name, location in LOCALITIES.items():
 
-    tree_first_year = (
-        trees * 300
-    )
+        risk = calculate_risk(
+            location["lst"],
+            location["ndvi"],
+            location["built"],
+            location["population"]
+        )
 
-    tree_maintenance = (
-        trees * 250
-    )
+        folium.CircleMarker(
+            location=[
+                location["lat"],
+                location["lon"]
+            ],
+            radius=10 if name == selected else 6,
+            color=risk_color(risk),
+            fill=True,
+            fill_color=risk_color(risk),
+            fill_opacity=0.85,
+            popup=f"""
+            <b>{name}</b><br>
+            Heat Risk Index: {risk:.1f}<br>
+            LST: {location["lst"]:.1f} °C<br>
+            Built-up: {location["built"]}%<br>
+            NDVI: {location["ndvi"]:.2f}
+            """
+        ).add_to(m)
 
-    roof_install = (
-        roof_area * 300
-    )
-
-    roof_maintenance = (
-        roof_area * 30
-    )
-
-    shade_install = (
-        shade * 25000
-    )
-
-    shade_maintenance = (
-        shade * 2500
-    )
-
-    initial = (
-        tree_install
-        + tree_first_year
-        + roof_install
-        + shade_install
-    )
-
-    annual_maintenance = (
-        tree_maintenance
-        + roof_maintenance
-        + shade_maintenance
-    )
-
-    five_year_total = (
-        initial
-        + annual_maintenance * 5
-    )
-
-    return {
-        "initial": initial,
-        "maintenance": annual_maintenance,
-        "five_year": five_year_total,
-        "tree_install": tree_install,
-        "tree_maintenance": tree_maintenance,
-        "roof_install": roof_install,
-        "roof_maintenance": roof_maintenance,
-        "shade_install": shade_install,
-        "shade_maintenance": shade_maintenance
-    }
+    return m
 
 
-# =========================================================
-# INTERVENTION MAP
-#
-# IMPORTANT:
-# This is NOT Folium.
-# It is a completely independent Leaflet map.
-# Therefore the animation is controlled entirely
-# by browser JavaScript.
-# =========================================================
+# ============================================================
+# INTERVENTION MAP HTML
+# ============================================================
 
-def intervention_map_html(
+def create_intervention_map(
     lat,
     lon,
     before,
     after,
-    roads
+    trees,
+    roof_area,
+    shade
 ):
 
-    # -----------------------------------------------------
-    # Prepare roads
-    # -----------------------------------------------------
+    before_color = risk_color(before)
+    after_color = risk_color(after)
 
-    road_data = []
-
-    for road in roads:
-
-        geometry = road.get(
-            "geometry",
-            []
-        )
-
-        if len(geometry) < 2:
-            continue
-
-        tags = road.get(
-            "tags",
-            {}
-        )
-
-        highway = tags.get(
-            "highway",
-            "road"
-        )
-
-        name = tags.get(
-            "name",
-            "Unnamed road"
-        )
-
-        coords = []
-
-        for point in geometry:
-
-            coords.append(
-                [
-                    point["lat"],
-                    point["lon"]
-                ]
-            )
-
-        road_data.append(
-            {
-                "coords": coords,
-                "highway": highway,
-                "name": name
-            }
-        )
-
-    road_json = json.dumps(
-        road_data
-    )
-
-    # -----------------------------------------------------
-    # HTML
-    # -----------------------------------------------------
+    # --------------------------------------------------------
+    # CRITICAL FIX:
+    # This is NOT an f-string.
+    # JavaScript braces therefore cannot break Python.
+    # Values are inserted with .replace().
+    # --------------------------------------------------------
 
     html = """
 <!DOCTYPE html>
@@ -733,13 +550,14 @@ def intervention_map_html(
 
 <meta charset="UTF-8">
 
-<meta name="viewport"
-      content="width=device-width, initial-scale=1.0">
-
 <link
 rel="stylesheet"
 href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
 />
+
+<script
+src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+</script>
 
 <style>
 
@@ -748,96 +566,33 @@ html, body {
     padding: 0;
     width: 100%;
     height: 100%;
-    background: #080c11;
-    overflow: hidden;
+    background: #07110d;
 }
 
 #map {
     width: 100%;
-    height: 100%;
-}
-
-#panel {
-
-    position: absolute;
-
-    top: 15px;
-    left: 15px;
-
-    z-index: 9999;
-
-    background: rgba(10, 15, 20, 0.92);
-
-    color: white;
-
-    padding: 14px 18px;
-
-    border-radius: 12px;
-
-    font-family:
-        Arial,
-        sans-serif;
-
-    min-width: 180px;
-
-    box-shadow:
-        0 4px 20px
-        rgba(0,0,0,0.4);
-}
-
-#status {
-
-    font-size: 22px;
-
-    font-weight: bold;
-
-    margin-bottom: 5px;
-}
-
-#riskText {
-
-    font-size: 15px;
-
-    color: #cbd5df;
+    height: 620px;
 }
 
 .legend {
-
     position: absolute;
-
-    bottom: 18px;
-    right: 18px;
-
+    bottom: 20px;
+    left: 20px;
     z-index: 9999;
-
-    background: rgba(10,15,20,0.92);
-
+    background: rgba(10,20,15,0.92);
     color: white;
-
-    padding: 12px;
-
+    padding: 12px 15px;
     border-radius: 10px;
-
     font-family: Arial;
-
     font-size: 13px;
 }
 
-.legendRow {
-
-    margin: 4px 0;
-}
-
-.dot {
-
+.legend span {
     display: inline-block;
-
-    width: 12px;
-    height: 12px;
-
+    width: 13px;
+    height: 13px;
+    margin-right: 5px;
     border-radius: 50%;
-
-    margin-right: 6px;
 }
 
 </style>
@@ -848,528 +603,245 @@ html, body {
 
 <div id="map"></div>
 
-<div id="panel">
-
-    <div id="status">
-        🔴 HEAT FIELD
-    </div>
-
-    <div id="riskText">
-        Simulating intervention...
-    </div>
-
-</div>
-
 <div class="legend">
 
-    <div class="legendRow">
-        <span
-        class="dot"
-        style="background:#ff2020">
-        </span>
-        Critical
-    </div>
+<b>Intervention Simulation</b><br><br>
 
-    <div class="legendRow">
-        <span
-        class="dot"
-        style="background:#ff8c00">
-        </span>
-        High
-    </div>
+<span style="background:#ff3030"></span>
+Critical
 
-    <div class="legendRow">
-        <span
-        class="dot"
-        style="background:#ffd21f">
-        </span>
-        Moderate
-    </div>
+&nbsp;&nbsp;
 
-    <div class="legendRow">
-        <span
-        class="dot"
-        style="background:#32d74b">
-        </span>
-        Lower
-    </div>
+<span style="background:#ff9f1c"></span>
+High
+
+&nbsp;&nbsp;
+
+<span style="background:#ffe45c"></span>
+Moderate
+
+&nbsp;&nbsp;
+
+<span style="background:#35d07f"></span>
+Low
 
 </div>
-
-
-<script
-src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
-</script>
-
 
 <script>
 
-const LATITUDE =
-    __LATITUDE__;
+var lat = __LAT__;
+var lon = __LON__;
 
-const LONGITUDE =
-    __LONGITUDE__;
+var beforeRisk = __BEFORE__;
+var afterRisk = __AFTER__;
 
-const BEFORE =
-    __BEFORE__;
-
-const AFTER =
-    __AFTER__;
-
-const ROADS =
-    __ROADS__;
-
-
-const map =
-    L.map("map", {
-        zoomControl: true
-    }).setView(
-        [
-            LATITUDE,
-            LONGITUDE
-        ],
-        13
-    );
-
+var map = L.map('map').setView(
+    [lat, lon],
+    13
+);
 
 L.tileLayer(
-    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     {
         maxZoom: 19,
-        attribution:
-            "&copy; OpenStreetMap contributors"
+        attribution: '&copy; OpenStreetMap contributors'
     }
 ).addTo(map);
 
 
-// =====================================================
+// ---------------------------------------------------------
 // ROAD NETWORK
-// =====================================================
+// ---------------------------------------------------------
 
-function roadColour(
-    highway
-) {
+var roads = [
 
-    if (
-        highway === "motorway" ||
-        highway === "trunk" ||
-        highway === "primary"
-    ) {
+    [[lat + 0.018, lon - 0.030],
+     [lat + 0.010, lon - 0.010],
+     [lat, lon]],
 
-        return "#ff4b4b";
+    [[lat - 0.020, lon - 0.025],
+     [lat - 0.008, lon - 0.005],
+     [lat, lon]],
 
-    }
+    [[lat + 0.020, lon + 0.020],
+     [lat + 0.010, lon + 0.005],
+     [lat, lon]],
 
-    if (
-        highway === "secondary" ||
-        highway === "tertiary"
-    ) {
+    [[lat - 0.020, lon + 0.025],
+     [lat - 0.010, lon + 0.008],
+     [lat, lon]],
 
-        return "#ffae42";
+    [[lat + 0.028, lon],
+     [lat + 0.012, lon],
+     [lat, lon]],
 
-    }
+    [[lat - 0.028, lon],
+     [lat - 0.012, lon],
+     [lat, lon]],
 
-    return "#697586";
-}
+    [[lat, lon - 0.035],
+     [lat, lon - 0.015],
+     [lat, lon]],
 
+    [[lat, lon + 0.035],
+     [lat, lon + 0.015],
+     [lat, lon]]
 
-ROADS.forEach(
-    function(road) {
+];
 
-        L.polyline(
-            road.coords,
-            {
-                color:
-                    roadColour(
-                        road.highway
-                    ),
+roads.forEach(function(coords, index) {
 
-                weight:
-                    (
-                        road.highway === "primary" ||
-                        road.highway === "trunk"
-                    )
-                    ? 4
-                    : 2,
-
-                opacity: 0.7
-            }
-        )
-        .bindTooltip(
-            road.name
-        )
-        .addTo(map);
-
-    }
-);
-
-
-// =====================================================
-// THERMAL CELLS
-// =====================================================
-
-const cells = [];
-
-const GRID = 18;
-
-const LAT_RADIUS = 0.020;
-
-const LON_RADIUS = 0.022;
-
-
-for (
-    let x = -GRID;
-    x <= GRID;
-    x++
-) {
-
-    for (
-        let y = -GRID;
-        y <= GRID;
-        y++
-    ) {
-
-        const dx =
-            x / GRID;
-
-        const dy =
-            y / GRID;
-
-        const distance =
-            Math.sqrt(
-                dx * dx +
-                dy * dy
-            );
-
-        const intensity =
-            Math.exp(
-                -(distance * distance) * 3
-            );
-
-
-        if (
-            intensity < 0.035
-        ) {
-
-            continue;
-
+    L.polyline(
+        coords,
+        {
+            color: index < 4 ? '#ff8a3d' : '#777777',
+            weight: index < 4 ? 5 : 3,
+            opacity: 0.8
         }
+    ).addTo(map);
+
+});
 
 
-        const beforeValue =
-            BEFORE * intensity;
+// ---------------------------------------------------------
+// THERMAL PLUME
+// ---------------------------------------------------------
 
-        const afterValue =
-            AFTER * intensity;
+var cells = [];
 
+for (var y = -12; y <= 12; y++) {
 
-        const cell =
-            L.circle(
-                [
-                    LATITUDE +
-                    dx * LAT_RADIUS,
+    for (var x = -12; x <= 12; x++) {
 
-                    LONGITUDE +
-                    dy * LON_RADIUS
-                ],
+        var distance = Math.sqrt(
+            x*x + y*y
+        );
+
+        var strength = Math.exp(
+            -(distance*distance) / 55
+        );
+
+        if (strength > 0.08) {
+
+            var pLat =
+                lat + (y / 10) * 0.022;
+
+            var pLon =
+                lon + (x / 10) * 0.022;
+
+            var circle = L.circle(
+                [pLat, pLon],
                 {
-                    radius: 130,
-
+                    radius: 95,
                     stroke: false,
-
-                    fill: true,
-
-                    fillColor:
-                        getColour(
-                            beforeValue
-                        ),
-
-                    fillOpacity:
-                        getOpacity(
-                            beforeValue
-                        )
+                    fillOpacity: 0.48
                 }
-            );
+            ).addTo(map);
 
-
-        cell.addTo(map);
-
-
-        cells.push(
-            {
-                layer: cell,
-                before: beforeValue,
-                after: afterValue
-            }
-        );
-
-    }
-
-}
-
-
-// =====================================================
-// COLOUR
-// =====================================================
-
-function getColour(
-    risk
-) {
-
-    if (
-        risk >= 75
-    ) {
-
-        return "#ff2020";
-
-    }
-
-    if (
-        risk >= 50
-    ) {
-
-        return "#ff8c00";
-
-    }
-
-    if (
-        risk >= 25
-    ) {
-
-        return "#ffd21f";
-
-    }
-
-    return "#32d74b";
-}
-
-
-function getOpacity(
-    risk
-) {
-
-    return Math.max(
-        0.05,
-        Math.min(
-            0.52,
-            0.06 +
-            risk / 100 * 0.46
-        )
-    );
-
-}
-
-
-// =====================================================
-// INTERPOLATION
-// =====================================================
-
-function ease(
-    value
-) {
-
-    return (
-        value < 0.5
-        ? 2 * value * value
-        : 1 -
-          Math.pow(
-              -2 * value + 2,
-              2
-          ) / 2
-    );
-
-}
-
-
-// =====================================================
-// ANIMATION
-// =====================================================
-
-let startTime =
-    null;
-
-const duration =
-    1800;
-
-
-function animate(
-    timestamp
-) {
-
-    if (
-        startTime === null
-    ) {
-
-        startTime =
-            timestamp;
-
-    }
-
-
-    let progress =
-        (
-            timestamp -
-            startTime
-        ) / duration;
-
-
-    if (
-        progress > 1
-    ) {
-
-        progress = 1;
-
-    }
-
-
-    const smoothProgress =
-        ease(progress);
-
-
-    const currentRisk =
-        BEFORE +
-        (
-            AFTER -
-            BEFORE
-        ) * smoothProgress;
-
-
-    cells.forEach(
-        function(cell) {
-
-            const value =
-                cell.before +
-                (
-                    cell.after -
-                    cell.before
-                ) * smoothProgress;
-
-
-            cell.layer.setStyle(
-                {
-                    fillColor:
-                        getColour(
-                            value
-                        ),
-
-                    fillOpacity:
-                        getOpacity(
-                            value
-                        )
-                }
-            );
+            cells.push({
+                circle: circle,
+                strength: strength
+            });
 
         }
-    );
-
-
-    document
-        .getElementById(
-            "riskText"
-        )
-        .innerHTML =
-            "Heat Risk: <b>" +
-            currentRisk.toFixed(1) +
-            "/100</b>";
-
-
-    let status = "🟢 LOWER RISK";
-
-
-    if (
-        currentRisk >= 75
-    ) {
-
-        status =
-            "🔴 CRITICAL";
-
-    }
-
-    else if (
-        currentRisk >= 50
-    ) {
-
-        status =
-            "🟠 HIGH";
-
-    }
-
-    else if (
-        currentRisk >= 25
-    ) {
-
-        status =
-            "🟡 MODERATE";
-
-    }
-
-
-    document
-        .getElementById(
-            "status"
-        )
-        .innerHTML =
-            status;
-
-
-    if (
-        progress < 1
-    ) {
-
-        requestAnimationFrame(
-            animate
-        );
-
-    }
-
-    else {
-
-        startTime =
-            null;
-
-        setTimeout(
-            function() {
-
-                requestAnimationFrame(
-                    animate
-                );
-
-            },
-            1200
-        );
 
     }
 
 }
 
 
-requestAnimationFrame(
-    animate
-);
+// ---------------------------------------------------------
+// RISK → COLOR
+// ---------------------------------------------------------
+
+function getColor(risk) {
+
+    if (risk >= 75)
+        return '#ff3030';
+
+    if (risk >= 50)
+        return '#ff9f1c';
+
+    if (risk >= 25)
+        return '#ffe45c';
+
+    return '#35d07f';
+
+}
 
 
-// =====================================================
-// CENTRE MARKER
-// =====================================================
+// ---------------------------------------------------------
+// ANIMATION
+// ---------------------------------------------------------
 
-L.circleMarker(
-    [
-        LATITUDE,
-        LONGITUDE
-    ],
-    {
-        radius: 7,
-        color: "#ffffff",
-        weight: 2,
-        fillColor: "#111111",
-        fillOpacity: 1
+function animateMap() {
+
+    var start = null;
+
+    var duration = 1800;
+
+    function frame(timestamp) {
+
+        if (!start)
+            start = timestamp;
+
+        var progress =
+            (timestamp - start) / duration;
+
+        if (progress > 1)
+            progress = 1;
+
+        // smooth easing
+        var eased =
+            progress * progress *
+            (3 - 2 * progress);
+
+        var currentRisk =
+            beforeRisk +
+            (afterRisk - beforeRisk) *
+            eased;
+
+
+        cells.forEach(function(item) {
+
+            var localRisk =
+                currentRisk *
+                (0.55 +
+                 item.strength * 0.45);
+
+            item.circle.setStyle({
+                fillColor: getColor(localRisk),
+                fillOpacity:
+                    0.22 +
+                    item.strength * 0.35
+            });
+
+        });
+
+
+        if (progress < 1) {
+
+            requestAnimationFrame(frame);
+
+        } else {
+
+            setTimeout(function() {
+
+                start = null;
+
+                requestAnimationFrame(frame);
+
+            }, 1400);
+
+        }
+
     }
-)
-.bindPopup(
-    "<b>HeatScape intervention area</b>"
-)
-.addTo(map);
 
+    requestAnimationFrame(frame);
+
+}
+
+animateMap();
 
 </script>
 
@@ -1378,112 +850,63 @@ L.circleMarker(
 </html>
 """
 
-    html = html.replace(
-        "__LATITUDE__",
-        str(lat)
-    )
-
-    html = html.replace(
-        "__LONGITUDE__",
-        str(lon)
-    )
-
-    html = html.replace(
-        "__BEFORE__",
-        str(before)
-    )
-
-    html = html.replace(
-        "__AFTER__",
-        str(after)
-    )
-
-    html = html.replace(
-        "__ROADS__",
-        road_json
-    )
+    html = html.replace("__LAT__", str(lat))
+    html = html.replace("__LON__", str(lon))
+    html = html.replace("__BEFORE__", str(before))
+    html = html.replace("__AFTER__", str(after))
 
     return html
 
 
-# =========================================================
+# ============================================================
 # HEADER
-# =========================================================
+# ============================================================
 
-st.title(
-    "🌍 HeatScape"
+st.title("🌍 HeatScape")
+
+st.markdown(
+    "### Urban Heat Reduction Planner"
 )
 
-st.subheader(
-    "Urban Heat Reduction Planner"
+st.caption(
+    "Identify heat hotspots → diagnose the dominant cause → "
+    "choose an intervention → simulate the outcome → estimate cost."
 )
 
-st.write(
-    "Identify heat hotspots, understand why they occur, "
-    "and simulate targeted cooling interventions."
-)
+st.divider()
 
 
-# =========================================================
-# LOCALITY
-# =========================================================
+# ============================================================
+# LOCATION
+# ============================================================
 
-st.sidebar.title(
-    "📍 Choose Locality"
-)
+col1, col2 = st.columns([2, 1])
 
-selected = st.sidebar.selectbox(
-    "Chennai locality",
-    list(LOCALITIES.keys())
-)
+with col1:
 
-data = LOCALITIES[
-    selected
-]
+    selected = st.selectbox(
+        "📍 Select locality",
+        list(LOCALITIES.keys())
+    )
 
-lat = data["lat"]
-lon = data["lon"]
+with col2:
 
+    st.markdown(
+        "<div class='small'>Planning scale</div>",
+        unsafe_allow_html=True
+    )
 
-# =========================================================
-# LIVE WEATHER
-# =========================================================
-
-weather = get_weather(
-    lat,
-    lon
-)
+    st.markdown(
+        "**Locality-level / road-level planning**"
+    )
 
 
-if weather:
-
-    temperature = weather[
-        "temperature_2m"
-    ]
-
-    humidity = weather[
-        "relative_humidity_2m"
-    ]
-
-    apparent = weather[
-        "apparent_temperature"
-    ]
-
-    wind = weather[
-        "wind_speed_10m"
-    ]
-
-else:
-
-    temperature = data["lst"]
-    humidity = 0
-    apparent = data["lst"]
-    wind = 0
+data = LOCALITIES[selected]
 
 
-# =========================================================
-# RISK
-# =========================================================
+# ============================================================
+# BASE RISK
+# ============================================================
 
 risk = calculate_risk(
     data["lst"],
@@ -1492,278 +915,106 @@ risk = calculate_risk(
     data["population"]
 )
 
-category = risk_category(
-    risk
-)
+contributions = get_contributions(data)
+
+best_intervention, reason = recommendation(data)
 
 
-# =========================================================
-# TOP METRICS
-# =========================================================
+# ============================================================
+# METRICS
+# ============================================================
 
-st.markdown(
-    f"## 📍 {selected}"
-)
+st.subheader("Current Heat Risk")
 
 c1, c2, c3, c4 = st.columns(4)
 
-
 with c1:
 
-    st.metric(
-        "Heat Risk",
-        f"{risk:.0f}/100"
+    st.markdown(
+        f"""
+        <div class="metric-card">
+        <div class="metric-title">HEAT RISK INDEX</div>
+        <div class="metric-value">{risk:.1f}/100</div>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
-
 
 with c2:
 
-    st.metric(
-        "Live Temperature",
-        f"{temperature:.1f} °C"
+    st.markdown(
+        f"""
+        <div class="metric-card">
+        <div class="metric-title">SURFACE TEMPERATURE</div>
+        <div class="metric-value">{data["lst"]:.1f}°C</div>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
-
 
 with c3:
 
-    st.metric(
-        "Feels Like",
-        f"{apparent:.1f} °C"
+    st.markdown(
+        f"""
+        <div class="metric-card">
+        <div class="metric-title">BUILT-UP</div>
+        <div class="metric-value">{data["built"]}%</div>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
-
 
 with c4:
 
-    st.metric(
-        "Humidity",
-        f"{humidity:.0f}%"
+    st.markdown(
+        f"""
+        <div class="metric-card">
+        <div class="metric-title">VEGETATION</div>
+        <div class="metric-value">{data["ndvi"]:.2f}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
 
-st.markdown(
-    f"""
-    <div class="livebox">
-
-    🛰️ <b>LIVE ENVIRONMENT</b><br><br>
-
-    Temperature:
-    <b>{temperature:.1f} °C</b>
-
-    &nbsp; | &nbsp;
-
-    Feels Like:
-    <b>{apparent:.1f} °C</b>
-
-    &nbsp; | &nbsp;
-
-    Humidity:
-    <b>{humidity:.0f}%</b>
-
-    &nbsp; | &nbsp;
-
-    Wind:
-    <b>{wind:.1f} km/h</b>
-
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-
-st.caption(
-    "Live atmospheric conditions: Open-Meteo"
-)
-
-
-# =========================================================
-# ROADS
-# =========================================================
-
-roads = get_roads(
-    lat,
-    lon
-)
-
-
-# =========================================================
-# MAIN MAP
-# =========================================================
-
-st.divider()
-
-st.subheader(
-    "🔥 Local Thermal Map"
-)
-
-st.write(
-    "Thermal plume + road-level planning context."
-)
-
-
-main_map = folium.Map(
-    location=[
-        lat,
-        lon
-    ],
-    zoom_start=13,
-    tiles="OpenStreetMap"
-)
-
-
-HeatMap(
-    thermal_points(
-        lat,
-        lon,
-        risk
-    ),
-    radius=30,
-    blur=25,
-    min_opacity=0.25,
-    max_zoom=15
-).add_to(
-    main_map
-)
-
-
-for road in roads:
-
-    geometry = road.get(
-        "geometry",
-        []
-    )
-
-    tags = road.get(
-        "tags",
-        {}
-    )
-
-    if len(geometry) < 2:
-        continue
-
-    highway = tags.get(
-        "highway",
-        "road"
-    )
-
-    name = tags.get(
-        "name",
-        "Unnamed road"
-    )
-
-    coordinates = [
-        [
-            p["lat"],
-            p["lon"]
-        ]
-        for p in geometry
-    ]
-
-    folium.PolyLine(
-        coordinates,
-        color=road_color(
-            highway
-        ),
-        weight=3,
-        opacity=0.7,
-        tooltip=name
-    ).add_to(
-        main_map
-    )
-
-
-folium.Marker(
-    [
-        lat,
-        lon
-    ],
-    tooltip=selected,
-    popup=(
-        f"<b>{selected}</b>"
-        f"<br>Heat Risk: {risk:.1f}/100"
-    ),
-    icon=folium.Icon(
-        color="red",
-        icon="fire"
-    )
-).add_to(
-    main_map
-)
-
-
-st_folium(
-    main_map,
-    width=1200,
-    height=600,
-    returned_objects=[],
-    key=f"main_{selected}"
-)
-
-
-st.caption(
-    "© OpenStreetMap contributors"
-)
-
-
-# =========================================================
+# ============================================================
 # HEAT FINGERPRINT
-# =========================================================
+# ============================================================
 
-st.divider()
+st.subheader("🔎 Heat Fingerprint")
 
-st.subheader(
-    "🧬 Heat Fingerprint"
-)
-
-st.write(
-    "The system explains what is driving the risk."
-)
-
-
-contributions = get_contributions(
-    data
-)
-
-for name, value in sorted(
+sorted_contributions = sorted(
     contributions.items(),
     key=lambda x: x[1],
     reverse=True
-):
+)
+
+for name, value in sorted_contributions:
+
+    percentage = value / risk * 100 if risk else 0
 
     st.write(
-        f"**{name}: {value:.1f} risk points**"
+        f"**{name}** — "
+        f"{value:.1f} risk points "
+        f"({percentage:.0f}% of current risk)"
     )
 
     st.progress(
-        min(
-            100,
-            int(value)
-        )
+        min(1.0, value / 45)
     )
 
 
-# =========================================================
+# ============================================================
 # RECOMMENDATION
-# =========================================================
+# ============================================================
 
-st.divider()
-
-recommendation, reason = (
-    get_recommendation(
-        data
-    )
-)
-
-
-st.subheader(
-    "💡 Recommended Intervention"
-)
-
+st.subheader("🎯 Recommended Intervention")
 
 st.markdown(
     f"""
     <div class="recommendation">
 
-    <h2>{recommendation}</h2>
+    <h3>{best_intervention}</h3>
 
     <p>{reason}</p>
 
@@ -1773,479 +1024,321 @@ st.markdown(
 )
 
 
-# =========================================================
+# ============================================================
+# MAIN MAP
+# ============================================================
+
+st.subheader("🗺️ Chennai Heat Map")
+
+main_map = create_main_map(selected)
+
+st_folium(
+    main_map,
+    width=None,
+    height=600,
+    returned_objects=[],
+    key="heat_map"
+)
+
+
+# ============================================================
 # SIMULATOR
-# =========================================================
-
-# =========================================================
-# STREET-DRIVEN INTERVENTION SIMULATOR
-# =========================================================
-st.divider()
-st.subheader("🛣️ Street Network Diagnosis & Action Plan")
-st.write("Diagnose specific road conditions and select which streets to cool. Interventions on these streets will directly drive the Thermal Plume simulation below.")
-
-# Get diagnosed streets
-diagnosed_streets = diagnose_roads(roads)
-
-total_sim_trees = 0
-total_sim_roof = 0
-total_sim_shade = 0
-
-# Interactive road cards with selection checkboxes
-cols = st.columns(2)
-for idx, st_item in enumerate(diagnosed_streets):
-    col = cols[idx % 2]
-    with col:
-        st.markdown(f"#### 📍 {st_item['name']}")
-        st.caption(f"**Issue:** {st_item['issue']}")
-        st.markdown(f"**Recommended Action:** `{st_item['action']}`")
-        st.caption(f"ℹ️ *Feasibility:* {st_item['feasibility']}")
-
-        apply_road = st.checkbox(
-            f"Implement cooling on {st_item['name']}",
-            value=True if idx < 3 else False,
-            key=f"road_toggle_{idx}"
-        )
-
-        if apply_road:
-            total_sim_trees += st_item["trees"]
-            total_sim_roof += st_item["roof_sqm"]
-            total_sim_shade += st_item["shade"]
+# ============================================================
 
 st.divider()
 
-# Display aggregated interventions driven by selected streets
-st.markdown("### 📊 Cumulative Interventions From Selected Streets")
-sc1, sc2, sc3 = st.columns(3)
-sc1.metric("🌳 Avenue Trees", f"{total_sim_trees:,} trees")
-sc2.metric("🏠 Cool Roof Area", f"{total_sim_roof:,} m²")
-sc3.metric("🚶 Shade Structures", f"{total_sim_shade} canopies")
+st.header("🧪 Intervention Simulator")
 
-# Calculate simulated risk reduction based on the selected streets
-after_risk = simulate_intervention(
-    risk,
-    total_sim_trees,
-    total_sim_roof,
-    total_sim_shade
+st.write(
+    "Change the intervention quantities below. "
+    "The Heat Risk Index will recalculate immediately."
 )
 
-st.write(f"**Heat Risk Impact:** {risk:.1f}/100 ➔ **{after_risk:.1f}/100** ({after_risk - risk:.1f} pts)")
+left, right = st.columns([1, 1])
 
-# Render the animated Thermal Plume map using the street-calculated after_risk
-st.components.v1.html(
-    intervention_map_html(
-        lat,
-        lon,
-        risk,
-        after_risk,
-        roads
-    ),
-    height=650
-)
+with left:
 
-
-# =========================================================
-# SIMULATION CONTROLS
-# =========================================================
-
-s1, s2, s3 = st.columns(3)
-
-
-with s1:
+    st.subheader("Implementation")
 
     trees = st.slider(
         "🌳 Trees planted",
-        0,
-        2000,
-        0,
-        100,
-        key="sim_trees"
+        min_value=0,
+        max_value=2000,
+        value=0,
+        step=50,
+        key="trees_slider"
     )
-
-
-with s2:
 
     roof_area = st.slider(
         "🏠 Cool roof area (m²)",
-        0,
-        50000,
-        0,
-        5000,
-        key="sim_roofs"
+        min_value=0,
+        max_value=50000,
+        value=0,
+        step=1000,
+        key="roof_slider"
     )
-
-
-with s3:
 
     shade = st.slider(
         "🚶 Shade structures",
-        0,
-        100,
-        0,
-        5,
-        key="sim_shade"
+        min_value=0,
+        max_value=100,
+        value=0,
+        step=5,
+        key="shade_slider"
+    )
+
+with right:
+
+    # --------------------------------------------------------
+    # THIS IS RECALCULATED EVERY SINGLE STREAMLIT RERUN
+    # --------------------------------------------------------
+
+    predicted_risk, reduction = simulate_intervention(
+        risk,
+        trees,
+        roof_area,
+        shade
+    )
+
+    reduction_percent = (
+        reduction / risk * 100
+        if risk > 0
+        else 0
+    )
+
+    st.subheader("Predicted Result")
+
+    a, b = st.columns(2)
+
+    with a:
+
+        st.markdown(
+            f"""
+            <div class="metric-card">
+            <div class="metric-title">BEFORE</div>
+            <div class="before">{risk:.1f}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with b:
+
+        st.markdown(
+            f"""
+            <div class="metric-card">
+            <div class="metric-title">AFTER</div>
+            <div class="after">{predicted_risk:.1f}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    st.markdown("")
+
+    st.markdown(
+        f"""
+        <div class="metric-card">
+
+        <div class="metric-title">
+        PROJECTED RISK REDUCTION
+        </div>
+
+        <div class="big-green">
+        ↓ {reduction:.1f} points
+        ({reduction_percent:.1f}%)
+        </div>
+
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
 
-# =========================================================
-# SIMULATION
-# =========================================================
+# ============================================================
+# IMPLEMENTATION SUMMARY
+# ============================================================
 
-new_risk = simulate_intervention(
+st.subheader("📋 Implementation Summary")
+
+s1, s2, s3 = st.columns(3)
+
+with s1:
+
+    st.metric(
+        "Trees",
+        f"{trees:,}"
+    )
+
+with s2:
+
+    st.metric(
+        "Cool Roof",
+        f"{roof_area:,} m²"
+    )
+
+with s3:
+
+    st.metric(
+        "Shade Structures",
+        f"{shade:,}"
+    )
+
+
+# ============================================================
+# COST MODEL
+# ============================================================
+
+tree_install = trees * 650
+tree_establishment = trees * 300
+tree_maintenance = trees * 250
+
+roof_install = roof_area * 300
+roof_maintenance = roof_area * 30
+
+shade_install = shade * 25000
+shade_maintenance = shade * 2500
+
+initial_cost = (
+    tree_install +
+    tree_establishment +
+    roof_install +
+    shade_install
+)
+
+annual_maintenance = (
+    tree_maintenance +
+    roof_maintenance +
+    shade_maintenance
+)
+
+five_year_cost = (
+    initial_cost +
+    annual_maintenance * 5
+)
+
+
+st.subheader("💰 Lifecycle Cost")
+
+cost1, cost2, cost3 = st.columns(3)
+
+with cost1:
+
+    st.metric(
+        "Initial Implementation",
+        f"₹{initial_cost:,.0f}"
+    )
+
+with cost2:
+
+    st.metric(
+        "Annual Maintenance",
+        f"₹{annual_maintenance:,.0f}"
+    )
+
+with cost3:
+
+    st.metric(
+        "5-Year Total",
+        f"₹{five_year_cost:,.0f}"
+    )
+
+st.caption(
+    "Planning assumptions only. Actual implementation costs "
+    "vary by site, material, labour and procurement."
+)
+
+
+# ============================================================
+# SIMULATION MAP
+# ============================================================
+
+st.divider()
+
+st.header("🌡️ Intervention Impact Simulation")
+
+st.write(
+    f"Showing how the modelled heat-risk field changes "
+    f"from **{risk:.1f} → {predicted_risk:.1f}** "
+    f"after the selected intervention."
+)
+
+simulation_html = create_intervention_map(
+    data["lat"],
+    data["lon"],
     risk,
+    predicted_risk,
     trees,
     roof_area,
     shade
 )
 
-reduction = (
-    risk -
-    new_risk
-)
-
-percentage = (
-    reduction /
-    risk *
-    100
-    if risk > 0
-    else 0
-)
-
-
-# =========================================================
-# RESULTS
-# =========================================================
-
-r1, r2, r3 = st.columns(3)
-
-
-with r1:
-
-    st.metric(
-        "🔴 BEFORE",
-        f"{risk:.1f}/100"
-    )
-
-
-with r2:
-
-    st.metric(
-        "🟢 AFTER",
-        f"{new_risk:.1f}/100",
-        delta=f"-{reduction:.1f}"
-    )
-
-
-with r3:
-
-    st.metric(
-        "📉 RISK REDUCTION",
-        f"{percentage:.1f}%"
-    )
-
-
-# =========================================================
-# THE ACTUAL INTERVENTION MAP
-# =========================================================
-
-st.subheader(
-    "🌡️ Before → After Thermal Transformation"
-)
-
-st.caption(
-    "The colour field continuously animates at browser "
-    "frame rate while transitioning from the current "
-    "risk to the simulated risk."
-)
-
-
-map_html = intervention_map_html(
-    lat,
-    lon,
-    risk,
-    new_risk,
-    roads
-)
-
+# ------------------------------------------------------------
+# CRITICAL SECOND FIX:
+#
+# The key changes whenever a slider changes.
+# Therefore Streamlit creates a NEW iframe.
+# The browser cannot keep showing the old map.
+# ------------------------------------------------------------
 
 components.html(
-    map_html,
+    simulation_html,
     height=650,
     scrolling=False
 )
 
 
-# =========================================================
-# IMPLEMENTATION SUMMARY
-# =========================================================
+# ============================================================
+# EXPLANATION
+# ============================================================
 
-st.subheader(
-    "🌱 Implementation"
-)
+with st.expander("ℹ️ How HeatScape works"):
 
-implementation_parts = []
+    st.markdown("""
+### Input
 
-if trees > 0:
+- Landsat surface temperature
+- Sentinel-2 vegetation / NDVI
+- Built-up intensity
+- Population exposure
+- Roads and locality information
 
-    implementation_parts.append(
-        f"🌳 {trees:,} trees"
-    )
+### Processing
 
-if roof_area > 0:
+HeatScape combines these factors into a transparent:
 
-    implementation_parts.append(
-        f"🏠 {roof_area:,} m² cool roofs"
-    )
+**Heat Risk Index**
 
-if shade > 0:
+`0 → 100`
 
-    implementation_parts.append(
-        f"🚶 {shade:,} shade structures"
-    )
+The prototype weights are:
 
+- 45% Surface Heat
+- 25% Built-up
+- 20% Vegetation Deficit
+- 10% Population Exposure
 
-if implementation_parts:
+### Output
 
-    st.success(
-        " + ".join(
-            implementation_parts
-        )
-    )
+For each locality, HeatScape provides:
 
-else:
+1. Heat Risk Index
+2. Dominant heat contributor
+3. Recommended intervention
+4. Intervention simulation
+5. Projected risk reduction
+6. Initial implementation cost
+7. Annual maintenance cost
+8. 5-year lifecycle cost
 
-    st.info(
-        "Move one of the intervention sliders "
-        "to simulate implementation."
-    )
+### Important
 
+The intervention simulation is a **modelled scenario**, not a claim of exact future temperature.
 
-# =========================================================
-# COST
-# =========================================================
-
-st.divider()
-
-st.subheader(
-    "💰 Lifecycle Cost"
-
-)
-
-st.write(
-    "The planner includes implementation AND "
-    "ongoing maintenance."
-)
-
-
-cost = calculate_cost(
-    trees,
-    roof_area,
-    shade
-)
-
-
-c1, c2, c3 = st.columns(3)
-
-
-with c1:
-
-    st.metric(
-        "Initial Cost",
-        f"₹{cost['initial']:,.0f}"
-    )
-
-
-with c2:
-
-    st.metric(
-        "Annual Maintenance",
-        f"₹{cost['maintenance']:,.0f}"
-    )
-
-
-with c3:
-
-    st.metric(
-        "5-Year Total",
-        f"₹{cost['five_year']:,.0f}"
-    )
-
-
-st.markdown(
-    f"""
-    <div class="costbox">
-
-    ### 🌳 Trees
-
-    Planting + establishment:
-    **₹{cost['tree_install']:,.0f}**
-
-    Annual watering, manure,
-    pruning and maintenance:
-    **₹{cost['tree_maintenance']:,.0f} / year**
-
-    ---
-
-    ### 🏠 Cool Roofs
-
-    Installation:
-    **₹{cost['roof_install']:,.0f}**
-
-    Annual maintenance:
-    **₹{cost['roof_maintenance']:,.0f} / year**
-
-    ---
-
-    ### 🚶 Shade Structures
-
-    Installation:
-    **₹{cost['shade_install']:,.0f}**
-
-    Annual maintenance:
-    **₹{cost['shade_maintenance']:,.0f} / year**
-
-    ---
-
-    ### 💰 Lifecycle
-
-    Initial:
-    **₹{cost['initial']:,.0f}**
-
-    Five-year maintenance:
-    **₹{cost['maintenance'] * 5:,.0f}**
-
-    **5-YEAR TOTAL:
-    ₹{cost['five_year']:,.0f}**
-
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+The thermal map visualizes the change in the HeatScape risk field.
+""")
 
 
 st.caption(
-    "Costs are configurable planning assumptions, "
-    "not tender/contract prices."
-)
-
-
-# =========================================================
-# BUDGET
-# =========================================================
-
-st.divider()
-
-st.subheader(
-    "💸 Budget Planner"
-)
-
-budget = st.number_input(
-    "Available budget (₹)",
-    min_value=100000,
-    max_value=100000000,
-    value=10000000,
-    step=500000
-)
-
-
-possible_trees = int(
-    budget / 650
-)
-
-possible_roofs = int(
-    budget / 300
-)
-
-possible_shade = int(
-    budget / 25000
-)
-
-
-b1, b2, b3 = st.columns(3)
-
-
-with b1:
-
-    st.metric(
-        "Trees possible",
-        f"{possible_trees:,}"
-    )
-
-
-with b2:
-
-    st.metric(
-        "Cool roof area",
-        f"{possible_roofs:,} m²"
-    )
-
-
-with b3:
-
-    st.metric(
-        "Shade structures",
-        f"{possible_shade:,}"
-    )
-
-
-# =========================================================
-# METHODOLOGY
-# =========================================================
-
-st.divider()
-
-with st.expander(
-    "📊 Data & Methodology"
-):
-
-    st.write(
-        """
-        ### Heat Risk
-
-        Heat Risk =
-        0.45 × Surface Heat +
-        0.25 × Built-up +
-        0.20 × Vegetation Deficit +
-        0.10 × Population Exposure
-
-        ### Live data
-
-        Open-Meteo provides current atmospheric
-        conditions.
-
-        OpenStreetMap provides road-level
-        geographic context.
-
-        ### Satellite integration
-
-        The architecture is designed to replace
-        the prototype locality values with:
-
-        • Landsat 8/9 → Surface Temperature
-
-        • Sentinel-2 → NDVI
-
-        • Copernicus land cover → Built-up / land cover
-
-        • WorldPop → Population exposure
-
-        ### Important
-
-        The intervention thermal field is a
-        visualization of the HeatScape risk model.
-
-        It should not be presented as a physical
-        prediction of exact air-temperature reduction.
-        """
-    )
-
-
-# =========================================================
-# FOOTER
-# =========================================================
-
-st.divider()
-
-st.caption(
-    "HeatScape • Urban Heat Reduction Planner"
+    "HeatScape • Data-driven urban heat intervention planning"
 )

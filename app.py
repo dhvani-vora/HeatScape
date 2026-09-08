@@ -5,92 +5,358 @@ from streamlit_folium import st_folium
 import streamlit.components.v1 as components
 import math
 
+
 # ============================================================
-# PAGE
+# PAGE CONFIG
 # ============================================================
 
 st.set_page_config(
-    page_title="HeatScape",
+    page_title="HeatScape | Urban Heat Planner",
     page_icon="🌍",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
+
 # ============================================================
-# CSS
+# GLOBAL CSS
 # ============================================================
 
 st.markdown("""
 <style>
 
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+
+html, body, [class*="css"] {
+    font-family: 'DM Sans', sans-serif;
+}
+
 .stApp {
-    background: #07110d;
-    color: #f4f7f5;
+    background: #f6f7f5;
+    color: #18231e;
 }
 
+/* Remove excessive Streamlit spacing */
 .block-container {
-    padding-top: 1.5rem;
-    max-width: 1450px;
+    max-width: 1440px;
+    padding-top: 1.8rem;
+    padding-bottom: 3rem;
 }
 
+/* Main titles */
 h1 {
     font-size: 42px !important;
-    margin-bottom: 0px !important;
+    font-weight: 700 !important;
+    letter-spacing: -1.5px;
+    color: #152019 !important;
 }
 
 h2 {
-    font-size: 28px !important;
+    font-size: 27px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.7px;
+    color: #152019 !important;
 }
 
 h3 {
-    font-size: 20px !important;
+    font-size: 19px !important;
+    font-weight: 700 !important;
+    color: #18231e !important;
 }
 
+/* Paragraphs */
+p {
+    color: #53615a;
+}
+
+/* Captions */
+.stCaption {
+    color: #738078 !important;
+}
+
+/* Divider */
+hr {
+    border: none;
+    border-top: 1px solid #dfe4e0;
+    margin: 2rem 0;
+}
+
+/* Selectbox */
+div[data-baseweb="select"] > div {
+    background: white !important;
+    border: 1px solid #d8ded9 !important;
+    border-radius: 10px !important;
+    min-height: 45px;
+}
+
+/* Slider */
+div[data-testid="stSlider"] {
+    padding-top: 0.3rem;
+}
+
+/* Metric cards */
 .metric-card {
-    background: #101c17;
-    border: 1px solid #26382f;
+    background: #ffffff;
+    border: 1px solid #e1e6e2;
     border-radius: 14px;
-    padding: 18px;
-    text-align: center;
+    padding: 20px 22px;
+    min-height: 112px;
+    box-shadow: 0 2px 8px rgba(20, 35, 28, 0.035);
 }
 
-.metric-title {
-    color: #9eb0a6;
-    font-size: 13px;
+.metric-label {
+    color: #758179;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
 }
 
 .metric-value {
+    color: #17231d;
     font-size: 30px;
+    line-height: 1.1;
     font-weight: 700;
 }
 
-.small {
-    color: #9eb0a6;
+.metric-sub {
+    color: #7b8780;
+    font-size: 12px;
+    margin-top: 6px;
+}
+
+/* Risk hero */
+.risk-card {
+    background: #17241d;
+    color: white;
+    border-radius: 16px;
+    padding: 26px 28px;
+    min-height: 145px;
+    box-shadow: 0 8px 24px rgba(22, 38, 29, 0.12);
+}
+
+.risk-label {
+    color: #aebbb3;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+}
+
+.risk-number {
+    color: white;
+    font-size: 45px;
+    font-weight: 700;
+    letter-spacing: -2px;
+    margin-top: 6px;
+}
+
+.risk-status {
+    color: #d6e2da;
+    font-size: 13px;
+    margin-top: 4px;
+}
+
+/* Recommendation */
+.recommendation-card {
+    background: #ffffff;
+    border: 1px solid #dfe7e1;
+    border-radius: 16px;
+    padding: 24px 26px;
+    box-shadow: 0 3px 12px rgba(20, 35, 28, 0.035);
+}
+
+.recommendation-tag {
+    color: #25825a;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.recommendation-title {
+    color: #17231d;
+    font-size: 23px;
+    font-weight: 700;
+    margin-top: 6px;
+}
+
+.recommendation-text {
+    color: #5e6963;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-top: 8px;
+}
+
+/* Fingerprint */
+.fingerprint-card {
+    background: white;
+    border: 1px solid #e1e6e2;
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 10px;
+}
+
+.fingerprint-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #26322c;
+}
+
+.fingerprint-value {
+    float: right;
+    font-size: 13px;
+    font-weight: 600;
+    color: #69756e;
+}
+
+/* Simulator */
+.simulator-card {
+    background: #ffffff;
+    border: 1px solid #dfe5e1;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 3px 12px rgba(20, 35, 28, 0.035);
+}
+
+.simulator-label {
+    color: #758179;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.before-number {
+    color: #d94c45;
+    font-size: 42px;
+    font-weight: 700;
+    letter-spacing: -1.5px;
+}
+
+.after-number {
+    color: #26845a;
+    font-size: 42px;
+    font-weight: 700;
+    letter-spacing: -1.5px;
+}
+
+.arrow {
+    color: #a4aea8;
+    font-size: 26px;
+    text-align: center;
+    padding-top: 14px;
+}
+
+.reduction-card {
+    background: #edf7f0;
+    border: 1px solid #d2ead9;
+    border-radius: 12px;
+    padding: 15px 18px;
+    margin-top: 15px;
+}
+
+.reduction-number {
+    color: #23794f;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.reduction-label {
+    color: #5b7164;
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+/* Section eyebrow */
+.eyebrow {
+    color: #31815c;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+/* Cost */
+.cost-card {
+    background: white;
+    border: 1px solid #e1e6e2;
+    border-radius: 14px;
+    padding: 20px;
+    min-height: 118px;
+}
+
+.cost-label {
+    color: #78847d;
+    font-size: 12px;
+    margin-bottom: 8px;
+}
+
+.cost-value {
+    color: #1a2820;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+/* Info box */
+.info-box {
+    background: #f0f4f1;
+    border: 1px solid #dce5df;
+    border-radius: 12px;
+    padding: 16px 18px;
+    color: #5c6961;
     font-size: 13px;
 }
 
-.recommendation {
-    background: #11271d;
-    border-left: 5px solid #38d996;
-    padding: 18px;
-    border-radius: 10px;
+/* Buttons */
+.stButton > button {
+    border-radius: 9px;
+    border: 1px solid #ccd6cf;
+    background: white;
+    color: #233029;
+    font-weight: 600;
+    min-height: 42px;
 }
 
-.before {
-    color: #ff5252;
-    font-size: 34px;
-    font-weight: bold;
+.stButton > button:hover {
+    border-color: #3b8d65;
+    color: #26744f;
 }
 
-.after {
-    color: #39d98a;
-    font-size: 34px;
-    font-weight: bold;
+/* Expander */
+.streamlit-expanderHeader {
+    font-weight: 600 !important;
+    color: #27342d !important;
 }
 
-.big-green {
-    color: #39d98a;
-    font-size: 22px;
-    font-weight: bold;
+/* Map spacing */
+.map-wrap {
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid #dce2de;
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    color: #87928c;
+    font-size: 12px;
+    padding-top: 30px;
+}
+
+/* Hide Streamlit branding */
+#MainMenu {
+    visibility: hidden;
+}
+
+footer {
+    visibility: hidden;
+}
+
+header {
+    visibility: hidden;
 }
 
 </style>
@@ -260,13 +526,11 @@ def calculate_risk(lst, ndvi, built, population):
         min(100, 100 - ndvi * 100)
     )
 
-    population_exposure = population
-
     risk = (
         0.45 * heat +
         0.25 * built +
         0.20 * vegetation_deficit +
-        0.10 * population_exposure
+        0.10 * population
     )
 
     return max(0, min(100, risk))
@@ -342,7 +606,7 @@ def recommendation(data):
 
 
 # ============================================================
-# INTERVENTION SIMULATOR
+# INTERVENTION SIMULATION
 # ============================================================
 
 def simulate_intervention(
@@ -351,14 +615,6 @@ def simulate_intervention(
     roof_area,
     shade_structures
 ):
-
-    # --------------------------------------------------------
-    # IMPORTANT:
-    # These effects are deliberately strong enough to make
-    # the simulator visibly respond during a demo.
-    # They are MODELLED risk-index effects, not measured
-    # temperature reductions.
-    # --------------------------------------------------------
 
     tree_effect = (trees / 2000.0) * 18.0
 
@@ -392,15 +648,15 @@ def simulate_intervention(
 def risk_color(risk):
 
     if risk >= 75:
-        return "#ff3030"
+        return "#e54848"
 
     if risk >= 50:
-        return "#ff9f1c"
+        return "#f39a35"
 
     if risk >= 25:
-        return "#ffe45c"
+        return "#e7ca4d"
 
-    return "#35d07f"
+    return "#38b879"
 
 
 # ============================================================
@@ -443,7 +699,7 @@ def generate_thermal_points(lat, lon, risk):
 
 
 # ============================================================
-# MAIN CHENNAI MAP
+# MAIN MAP
 # ============================================================
 
 def create_main_map(selected):
@@ -457,7 +713,6 @@ def create_main_map(selected):
         control_scale=True
     )
 
-    # Heat plumes
     heat_points = []
 
     for name, location in LOCALITIES.items():
@@ -469,13 +724,13 @@ def create_main_map(selected):
             location["population"]
         )
 
-        pts = generate_thermal_points(
-            location["lat"],
-            location["lon"],
-            risk
+        heat_points.extend(
+            generate_thermal_points(
+                location["lat"],
+                location["lon"],
+                risk
+            )
         )
-
-        heat_points.extend(pts)
 
     HeatMap(
         heat_points,
@@ -485,7 +740,6 @@ def create_main_map(selected):
         max_zoom=13
     ).add_to(m)
 
-    # Locality markers
     for name, location in LOCALITIES.items():
 
         risk = calculate_risk(
@@ -495,51 +749,53 @@ def create_main_map(selected):
             location["population"]
         )
 
+        selected_radius = 11 if name == selected else 6
+
         folium.CircleMarker(
             location=[
                 location["lat"],
                 location["lon"]
             ],
-            radius=10 if name == selected else 6,
+            radius=selected_radius,
             color=risk_color(risk),
             fill=True,
             fill_color=risk_color(risk),
-            fill_opacity=0.85,
-            popup=f"""
-            <b>{name}</b><br>
-            Heat Risk Index: {risk:.1f}<br>
-            LST: {location["lst"]:.1f} °C<br>
-            Built-up: {location["built"]}%<br>
-            NDVI: {location["ndvi"]:.2f}
-            """
+            fill_opacity=0.9,
+            weight=2,
+            popup=folium.Popup(
+                f"""
+                <div style="
+                    font-family:Arial;
+                    min-width:180px;
+                    line-height:1.6;
+                ">
+                    <b style="font-size:16px;">{name}</b><br>
+                    <span style="color:#666;">
+                    Heat Risk
+                    </span>
+                    <b>{risk:.1f}/100</b><br>
+                    Surface Temperature: {location["lst"]:.1f}°C<br>
+                    Built-up: {location["built"]}%<br>
+                    NDVI: {location["ndvi"]:.2f}
+                </div>
+                """,
+                max_width=280
+            )
         ).add_to(m)
 
     return m
 
 
 # ============================================================
-# INTERVENTION MAP HTML
+# INTERVENTION MAP
 # ============================================================
 
 def create_intervention_map(
     lat,
     lon,
     before,
-    after,
-    trees,
-    roof_area,
-    shade
+    after
 ):
-
-    before_color = risk_color(before)
-    after_color = risk_color(after)
-
-    # --------------------------------------------------------
-    # CRITICAL FIX:
-    # This is NOT an f-string.
-    # JavaScript braces therefore cannot break Python.
-    # Values are inserted with .replace().
-    # --------------------------------------------------------
 
     html = """
 <!DOCTYPE html>
@@ -566,7 +822,7 @@ html, body {
     padding: 0;
     width: 100%;
     height: 100%;
-    background: #07110d;
+    background: #f6f7f5;
 }
 
 #map {
@@ -576,23 +832,42 @@ html, body {
 
 .legend {
     position: absolute;
-    bottom: 20px;
-    left: 20px;
+    bottom: 18px;
+    left: 18px;
     z-index: 9999;
-    background: rgba(10,20,15,0.92);
-    color: white;
-    padding: 12px 15px;
+
+    background: rgba(255,255,255,0.96);
+
+    border: 1px solid #d9dfdb;
+
+    color: #26332c;
+
+    padding: 13px 15px;
+
     border-radius: 10px;
-    font-family: Arial;
-    font-size: 13px;
+
+    font-family: Arial, sans-serif;
+
+    font-size: 12px;
+
+    box-shadow: 0 2px 10px rgba(0,0,0,0.10);
 }
 
-.legend span {
+.legend-title {
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.legend-row {
+    margin: 5px 0;
+}
+
+.legend-dot {
     display: inline-block;
-    width: 13px;
-    height: 13px;
-    margin-right: 5px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
+    margin-right: 6px;
 }
 
 </style>
@@ -605,25 +880,33 @@ html, body {
 
 <div class="legend">
 
-<b>Intervention Simulation</b><br><br>
+<div class="legend-title">
+Heat Risk
+</div>
 
-<span style="background:#ff3030"></span>
+<div class="legend-row">
+<span class="legend-dot"
+style="background:#e54848"></span>
 Critical
+</div>
 
-&nbsp;&nbsp;
-
-<span style="background:#ff9f1c"></span>
+<div class="legend-row">
+<span class="legend-dot"
+style="background:#f39a35"></span>
 High
+</div>
 
-&nbsp;&nbsp;
-
-<span style="background:#ffe45c"></span>
+<div class="legend-row">
+<span class="legend-dot"
+style="background:#e7ca4d"></span>
 Moderate
+</div>
 
-&nbsp;&nbsp;
-
-<span style="background:#35d07f"></span>
+<div class="legend-row">
+<span class="legend-dot"
+style="background:#38b879"></span>
 Low
+</div>
 
 </div>
 
@@ -635,76 +918,41 @@ var lon = __LON__;
 var beforeRisk = __BEFORE__;
 var afterRisk = __AFTER__;
 
-var map = L.map('map').setView(
+var map = L.map('map', {
+    zoomControl: true
+}).setView(
     [lat, lon],
-    13
+    14
 );
 
 L.tileLayer(
     'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     {
         maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors'
+        attribution:
+        '&copy; OpenStreetMap contributors'
     }
 ).addTo(map);
 
 
 // ---------------------------------------------------------
-// ROAD NETWORK
+// SELECTED LOCATION
 // ---------------------------------------------------------
 
-var roads = [
-
-    [[lat + 0.018, lon - 0.030],
-     [lat + 0.010, lon - 0.010],
-     [lat, lon]],
-
-    [[lat - 0.020, lon - 0.025],
-     [lat - 0.008, lon - 0.005],
-     [lat, lon]],
-
-    [[lat + 0.020, lon + 0.020],
-     [lat + 0.010, lon + 0.005],
-     [lat, lon]],
-
-    [[lat - 0.020, lon + 0.025],
-     [lat - 0.010, lon + 0.008],
-     [lat, lon]],
-
-    [[lat + 0.028, lon],
-     [lat + 0.012, lon],
-     [lat, lon]],
-
-    [[lat - 0.028, lon],
-     [lat - 0.012, lon],
-     [lat, lon]],
-
-    [[lat, lon - 0.035],
-     [lat, lon - 0.015],
-     [lat, lon]],
-
-    [[lat, lon + 0.035],
-     [lat, lon + 0.015],
-     [lat, lon]]
-
-];
-
-roads.forEach(function(coords, index) {
-
-    L.polyline(
-        coords,
-        {
-            color: index < 4 ? '#ff8a3d' : '#777777',
-            weight: index < 4 ? 5 : 3,
-            opacity: 0.8
-        }
-    ).addTo(map);
-
-});
+L.circleMarker(
+    [lat, lon],
+    {
+        radius: 7,
+        color: '#ffffff',
+        weight: 3,
+        fillColor: '#e54848',
+        fillOpacity: 1
+    }
+).addTo(map);
 
 
 // ---------------------------------------------------------
-// THERMAL PLUME
+// THERMAL FIELD
 // ---------------------------------------------------------
 
 var cells = [];
@@ -734,7 +982,7 @@ for (var y = -12; y <= 12; y++) {
                 {
                     radius: 95,
                     stroke: false,
-                    fillOpacity: 0.48
+                    fillOpacity: 0.40
                 }
             ).addTo(map);
 
@@ -751,21 +999,21 @@ for (var y = -12; y <= 12; y++) {
 
 
 // ---------------------------------------------------------
-// RISK → COLOR
+// COLOR FUNCTION
 // ---------------------------------------------------------
 
 function getColor(risk) {
 
     if (risk >= 75)
-        return '#ff3030';
+        return '#e54848';
 
     if (risk >= 50)
-        return '#ff9f1c';
+        return '#f39a35';
 
     if (risk >= 25)
-        return '#ffe45c';
+        return '#e7ca4d';
 
-    return '#35d07f';
+    return '#38b879';
 
 }
 
@@ -791,7 +1039,6 @@ function animateMap() {
         if (progress > 1)
             progress = 1;
 
-        // smooth easing
         var eased =
             progress * progress *
             (3 - 2 * progress);
@@ -801,37 +1048,31 @@ function animateMap() {
             (afterRisk - beforeRisk) *
             eased;
 
-
         cells.forEach(function(item) {
 
             var localRisk =
                 currentRisk *
-                (0.55 +
-                 item.strength * 0.45);
+                (
+                    0.55 +
+                    item.strength * 0.45
+                );
 
             item.circle.setStyle({
-                fillColor: getColor(localRisk),
+
+                fillColor:
+                    getColor(localRisk),
+
                 fillOpacity:
-                    0.22 +
+                    0.18 +
                     item.strength * 0.35
+
             });
 
         });
 
-
         if (progress < 1) {
 
             requestAnimationFrame(frame);
-
-        } else {
-
-            setTimeout(function() {
-
-                start = null;
-
-                requestAnimationFrame(frame);
-
-            }, 1400);
 
         }
 
@@ -850,10 +1091,25 @@ animateMap();
 </html>
 """
 
-    html = html.replace("__LAT__", str(lat))
-    html = html.replace("__LON__", str(lon))
-    html = html.replace("__BEFORE__", str(before))
-    html = html.replace("__AFTER__", str(after))
+    html = html.replace(
+        "__LAT__",
+        str(lat)
+    )
+
+    html = html.replace(
+        "__LON__",
+        str(lon)
+    )
+
+    html = html.replace(
+        "__BEFORE__",
+        str(before)
+    )
+
+    html = html.replace(
+        "__AFTER__",
+        str(after)
+    )
 
     return html
 
@@ -862,16 +1118,37 @@ animateMap();
 # HEADER
 # ============================================================
 
-st.title("🌍 HeatScape")
-
-st.markdown(
-    "### Urban Heat Reduction Planner"
+header_left, header_right = st.columns(
+    [4, 1]
 )
 
-st.caption(
-    "Identify heat hotspots → diagnose the dominant cause → "
-    "choose an intervention → simulate the outcome → estimate cost."
-)
+with header_left:
+
+    st.markdown(
+        "<div class='eyebrow'>CLIMATE INTELLIGENCE · CHENNAI</div>",
+        unsafe_allow_html=True
+    )
+
+    st.title("HeatScape")
+
+    st.markdown(
+        "Urban heat reduction planning, made simple."
+    )
+
+with header_right:
+
+    st.markdown(
+        "<div style='text-align:right; padding-top:12px;'>"
+        "<span style='font-size:12px; color:#758179;'>"
+        "GREATER CHENNAI"
+        "</span><br>"
+        "<span style='font-size:13px; font-weight:600;'>"
+        "Planning View"
+        "</span>"
+        "</div>",
+        unsafe_allow_html=True
+    )
+
 
 st.divider()
 
@@ -880,24 +1157,37 @@ st.divider()
 # LOCATION
 # ============================================================
 
-col1, col2 = st.columns([2, 1])
+st.markdown(
+    "<div class='eyebrow'>01 · SELECT LOCATION</div>",
+    unsafe_allow_html=True
+)
 
-with col1:
+location_col, status_col = st.columns(
+    [2.5, 1]
+)
+
+with location_col:
 
     selected = st.selectbox(
-        "📍 Select locality",
-        list(LOCALITIES.keys())
+        "Locality",
+        list(LOCALITIES.keys()),
+        label_visibility="collapsed"
     )
 
-with col2:
+with status_col:
 
     st.markdown(
-        "<div class='small'>Planning scale</div>",
+        """
+        <div style="
+            padding-top:10px;
+            text-align:right;
+            color:#66736b;
+            font-size:13px;
+        ">
+        ● Planning dataset active
+        </div>
+        """,
         unsafe_allow_html=True
-    )
-
-    st.markdown(
-        "**Locality-level / road-level planning**"
     )
 
 
@@ -921,102 +1211,166 @@ best_intervention, reason = recommendation(data)
 
 
 # ============================================================
-# METRICS
+# LOCATION OVERVIEW
 # ============================================================
-
-st.subheader("Current Heat Risk")
-
-c1, c2, c3, c4 = st.columns(4)
-
-with c1:
-
-    st.markdown(
-        f"""
-        <div class="metric-card">
-        <div class="metric-title">HEAT RISK INDEX</div>
-        <div class="metric-value">{risk:.1f}/100</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-with c2:
-
-    st.markdown(
-        f"""
-        <div class="metric-card">
-        <div class="metric-title">SURFACE TEMPERATURE</div>
-        <div class="metric-value">{data["lst"]:.1f}°C</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-with c3:
-
-    st.markdown(
-        f"""
-        <div class="metric-card">
-        <div class="metric-title">BUILT-UP</div>
-        <div class="metric-value">{data["built"]}%</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-with c4:
-
-    st.markdown(
-        f"""
-        <div class="metric-card">
-        <div class="metric-title">VEGETATION</div>
-        <div class="metric-value">{data["ndvi"]:.2f}</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-# ============================================================
-# HEAT FINGERPRINT
-# ============================================================
-
-st.subheader("🔎 Heat Fingerprint")
-
-sorted_contributions = sorted(
-    contributions.items(),
-    key=lambda x: x[1],
-    reverse=True
-)
-
-for name, value in sorted_contributions:
-
-    percentage = value / risk * 100 if risk else 0
-
-    st.write(
-        f"**{name}** — "
-        f"{value:.1f} risk points "
-        f"({percentage:.0f}% of current risk)"
-    )
-
-    st.progress(
-        min(1.0, value / 45)
-    )
-
-
-# ============================================================
-# RECOMMENDATION
-# ============================================================
-
-st.subheader("🎯 Recommended Intervention")
 
 st.markdown(
     f"""
-    <div class="recommendation">
+    <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:end;
+        margin-top:22px;
+        margin-bottom:12px;
+    ">
+        <div>
+            <div class="eyebrow">CURRENT CONDITIONS</div>
+            <div style="
+                font-size:25px;
+                font-weight:700;
+                color:#17231d;
+            ">
+                {selected}
+            </div>
+        </div>
+        <div style="
+            color:#7a857e;
+            font-size:13px;
+        ">
+            Locality-level assessment
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
-    <h3>{best_intervention}</h3>
 
-    <p>{reason}</p>
+m1, m2, m3, m4 = st.columns(4)
+
+with m1:
+
+    st.markdown(
+        f"""
+        <div class="risk-card">
+            <div class="risk-label">
+                Heat Risk Index
+            </div>
+            <div class="risk-number">
+                {risk:.1f}
+            </div>
+            <div class="risk-status">
+                out of 100
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+with m2:
+
+    st.markdown(
+        f"""
+        <div class="metric-card">
+            <div class="metric-label">
+                Surface Temperature
+            </div>
+            <div class="metric-value">
+                {data["lst"]:.1f}°C
+            </div>
+            <div class="metric-sub">
+                Observed surface heat
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+with m3:
+
+    st.markdown(
+        f"""
+        <div class="metric-card">
+            <div class="metric-label">
+                Built-up Intensity
+            </div>
+            <div class="metric-value">
+                {data["built"]}%
+            </div>
+            <div class="metric-sub">
+                Developed surface
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+with m4:
+
+    st.markdown(
+        f"""
+        <div class="metric-card">
+            <div class="metric-label">
+                Vegetation
+            </div>
+            <div class="metric-value">
+                {data["ndvi"]:.2f}
+            </div>
+            <div class="metric-sub">
+                NDVI indicator
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+# ============================================================
+# MAIN MAP
+# ============================================================
+
+st.markdown(
+    "<div style='height:18px'></div>",
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    "<div class='eyebrow'>02 · EXPLORE THE HOTSPOT</div>",
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    f"""
+    <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        margin-bottom:12px;
+    ">
+
+        <div>
+            <div style="
+                font-size:23px;
+                font-weight:700;
+                color:#17231d;
+            ">
+                Chennai heat map
+            </div>
+
+            <div style="
+                font-size:13px;
+                color:#718078;
+                margin-top:3px;
+            ">
+                Thermal intensity across selected localities
+            </div>
+        </div>
+
+        <div style="
+            font-size:12px;
+            color:#718078;
+        ">
+            OpenStreetMap · Leaflet
+        </div>
 
     </div>
     """,
@@ -1024,21 +1378,138 @@ st.markdown(
 )
 
 
-# ============================================================
-# MAIN MAP
-# ============================================================
-
-st.subheader("🗺️ Chennai Heat Map")
-
 main_map = create_main_map(selected)
 
 st_folium(
     main_map,
     width=None,
-    height=600,
+    height=570,
     returned_objects=[],
-    key="heat_map"
+    key="main_heat_map"
 )
+
+
+# ============================================================
+# DIAGNOSIS
+# ============================================================
+
+st.divider()
+
+st.markdown(
+    "<div class='eyebrow'>03 · UNDERSTAND THE HOTSPOT</div>",
+    unsafe_allow_html=True
+)
+
+diag_left, diag_right = st.columns(
+    [1.05, 0.95],
+    gap="large"
+)
+
+
+with diag_left:
+
+    st.markdown(
+        f"""
+        <div style="
+            font-size:23px;
+            font-weight:700;
+            color:#17231d;
+            margin-bottom:5px;
+        ">
+            What's driving the heat?
+        </div>
+
+        <div style="
+            color:#718078;
+            font-size:13px;
+            margin-bottom:18px;
+        ">
+            Contribution to the current Heat Risk Index
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    sorted_contributions = sorted(
+        contributions.items(),
+        key=lambda x: x[1],
+        reverse=True
+    )
+
+    for name, value in sorted_contributions:
+
+        percentage = (
+            value / risk * 100
+            if risk > 0
+            else 0
+        )
+
+        st.markdown(
+            f"""
+            <div class="fingerprint-card">
+
+                <div>
+                    <span class="fingerprint-name">
+                        {name}
+                    </span>
+
+                    <span class="fingerprint-value">
+                        {percentage:.0f}%
+                    </span>
+                </div>
+
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        st.progress(
+            min(1.0, value / 45)
+        )
+
+
+with diag_right:
+
+    st.markdown(
+        f"""
+        <div class="recommendation-card">
+
+            <div class="recommendation-tag">
+                Recommended first action
+            </div>
+
+            <div class="recommendation-title">
+                {best_intervention}
+            </div>
+
+            <div class="recommendation-text">
+                {reason}
+            </div>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        "<div style='height:12px'></div>",
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        f"""
+        <div class="info-box">
+
+        <b>Decision logic</b><br><br>
+
+        HeatScape identifies the largest contributor to
+        the locality's Heat Risk Index and uses it to select
+        the first intervention to test.
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 
 # ============================================================
@@ -1047,18 +1518,65 @@ st_folium(
 
 st.divider()
 
-st.header("🧪 Intervention Simulator")
-
-st.write(
-    "Change the intervention quantities below. "
-    "The Heat Risk Index will recalculate immediately."
+st.markdown(
+    "<div class='eyebrow'>04 · TEST AN INTERVENTION</div>",
+    unsafe_allow_html=True
 )
 
-left, right = st.columns([1, 1])
+st.markdown(
+    f"""
+    <div style="
+        font-size:26px;
+        font-weight:700;
+        color:#17231d;
+    ">
+        What happens if we cool {selected}?
+    </div>
 
-with left:
+    <div style="
+        color:#718078;
+        font-size:14px;
+        margin-top:4px;
+        margin-bottom:22px;
+    ">
+        Adjust the implementation and watch the modelled
+        Heat Risk change.
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
-    st.subheader("Implementation")
+
+sim_left, sim_right = st.columns(
+    [1, 1.25],
+    gap="large"
+)
+
+
+# ------------------------------------------------------------
+# CONTROLS
+# ------------------------------------------------------------
+
+with sim_left:
+
+    st.markdown(
+        "<div class='simulator-card'>",
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        "<div style='font-size:17px;font-weight:700;margin-bottom:4px;'>"
+        "Implementation"
+        "</div>",
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        "<div style='color:#718078;font-size:12px;margin-bottom:16px;'>"
+        "Set the scale of each cooling measure."
+        "</div>",
+        unsafe_allow_html=True
+    )
 
     trees = st.slider(
         "🌳 Trees planted",
@@ -1087,70 +1605,108 @@ with left:
         key="shade_slider"
     )
 
-with right:
-
-    # --------------------------------------------------------
-    # THIS IS RECALCULATED EVERY SINGLE STREAMLIT RERUN
-    # --------------------------------------------------------
-
-    predicted_risk, reduction = simulate_intervention(
-        risk,
-        trees,
-        roof_area,
-        shade
+    st.markdown(
+        "</div>",
+        unsafe_allow_html=True
     )
 
-    reduction_percent = (
-        reduction / risk * 100
-        if risk > 0
-        else 0
+
+# ------------------------------------------------------------
+# CALCULATION
+# ------------------------------------------------------------
+
+predicted_risk, reduction = simulate_intervention(
+    risk,
+    trees,
+    roof_area,
+    shade
+)
+
+reduction_percent = (
+    reduction / risk * 100
+    if risk > 0
+    else 0
+)
+
+
+# ------------------------------------------------------------
+# RESULT
+# ------------------------------------------------------------
+
+with sim_right:
+
+    st.markdown(
+        "<div class='simulator-card'>",
+        unsafe_allow_html=True
     )
 
-    st.subheader("Predicted Result")
+    st.markdown(
+        "<div style='font-size:17px;font-weight:700;margin-bottom:16px;'>"
+        "Projected impact"
+        "</div>",
+        unsafe_allow_html=True
+    )
 
-    a, b = st.columns(2)
+    before_col, arrow_col, after_col = st.columns(
+        [1, 0.25, 1]
+    )
 
-    with a:
+    with before_col:
 
         st.markdown(
             f"""
-            <div class="metric-card">
-            <div class="metric-title">BEFORE</div>
-            <div class="before">{risk:.1f}</div>
+            <div class="simulator-label">
+                Current risk
+            </div>
+
+            <div class="before-number">
+                {risk:.1f}
             </div>
             """,
             unsafe_allow_html=True
         )
 
-    with b:
+    with arrow_col:
+
+        st.markdown(
+            "<div class='arrow'>→</div>",
+            unsafe_allow_html=True
+        )
+
+    with after_col:
 
         st.markdown(
             f"""
-            <div class="metric-card">
-            <div class="metric-title">AFTER</div>
-            <div class="after">{predicted_risk:.1f}</div>
+            <div class="simulator-label">
+                Projected risk
+            </div>
+
+            <div class="after-number">
+                {predicted_risk:.1f}
             </div>
             """,
             unsafe_allow_html=True
         )
-
-    st.markdown("")
 
     st.markdown(
         f"""
-        <div class="metric-card">
+        <div class="reduction-card">
 
-        <div class="metric-title">
-        PROJECTED RISK REDUCTION
-        </div>
+            <div class="reduction-number">
+                ↓ {reduction:.1f} risk points
+            </div>
 
-        <div class="big-green">
-        ↓ {reduction:.1f} points
-        ({reduction_percent:.1f}%)
-        </div>
+            <div class="reduction-label">
+                {reduction_percent:.1f}% projected reduction
+            </div>
 
         </div>
         """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        "</div>",
         unsafe_allow_html=True
     )
 
@@ -1159,35 +1715,170 @@ with right:
 # IMPLEMENTATION SUMMARY
 # ============================================================
 
-st.subheader("📋 Implementation Summary")
+st.markdown(
+    "<div style='height:22px'></div>",
+    unsafe_allow_html=True
+)
 
 s1, s2, s3 = st.columns(3)
 
 with s1:
 
-    st.metric(
-        "Trees",
-        f"{trees:,}"
+    st.markdown(
+        f"""
+        <div class="metric-card">
+
+            <div class="metric-label">
+                Trees
+            </div>
+
+            <div class="metric-value">
+                {trees:,}
+            </div>
+
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
 with s2:
 
-    st.metric(
-        "Cool Roof",
-        f"{roof_area:,} m²"
+    st.markdown(
+        f"""
+        <div class="metric-card">
+
+            <div class="metric-label">
+                Cool Roof
+            </div>
+
+            <div class="metric-value">
+                {roof_area:,} m²
+            </div>
+
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
 with s3:
 
-    st.metric(
-        "Shade Structures",
-        f"{shade:,}"
+    st.markdown(
+        f"""
+        <div class="metric-card">
+
+            <div class="metric-label">
+                Shade Structures
+            </div>
+
+            <div class="metric-value">
+                {shade:,}
+            </div>
+
+        </div>
+        """,
+        unsafe_allow_html=True
     )
+
+
+# ============================================================
+# INTERVENTION MAP
+# ============================================================
+
+st.markdown(
+    "<div style='height:28px'></div>",
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    "<div class='eyebrow'>05 · WATCH THE CHANGE</div>",
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    f"""
+    <div style="
+        font-size:25px;
+        font-weight:700;
+        color:#17231d;
+    ">
+        Intervention impact simulation
+    </div>
+
+    <div style="
+        color:#718078;
+        font-size:13px;
+        margin-top:4px;
+        margin-bottom:14px;
+    ">
+        Modelled heat-risk field for {selected}
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+
+simulation_html = create_intervention_map(
+    data["lat"],
+    data["lon"],
+    risk,
+    predicted_risk
+)
+
+components.html(
+    simulation_html,
+    height=640,
+    scrolling=False
+)
+
+
+st.markdown(
+    """
+    <div style="
+        color:#7c8781;
+        font-size:11px;
+        margin-top:6px;
+    ">
+        The thermal field represents the modelled Heat Risk Index,
+        not physical heat dispersion or exact temperature reduction.
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 
 # ============================================================
 # COST MODEL
 # ============================================================
+
+st.divider()
+
+st.markdown(
+    "<div class='eyebrow'>06 · COST OF IMPLEMENTATION</div>",
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    """
+    <div style="
+        font-size:25px;
+        font-weight:700;
+        color:#17231d;
+    ">
+        What would this cost?
+    </div>
+
+    <div style="
+        color:#718078;
+        font-size:13px;
+        margin-top:4px;
+        margin-bottom:18px;
+    ">
+        Lifecycle estimate for the selected intervention mix
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 
 tree_install = trees * 650
 tree_establishment = trees * 300
@@ -1218,127 +1909,157 @@ five_year_cost = (
 )
 
 
-st.subheader("💰 Lifecycle Cost")
+c1, c2, c3 = st.columns(3)
 
-cost1, cost2, cost3 = st.columns(3)
+with c1:
 
-with cost1:
+    st.markdown(
+        f"""
+        <div class="cost-card">
 
-    st.metric(
-        "Initial Implementation",
-        f"₹{initial_cost:,.0f}"
+            <div class="cost-label">
+                Initial implementation
+            </div>
+
+            <div class="cost-value">
+                ₹{initial_cost:,.0f}
+            </div>
+
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-with cost2:
+with c2:
 
-    st.metric(
-        "Annual Maintenance",
-        f"₹{annual_maintenance:,.0f}"
+    st.markdown(
+        f"""
+        <div class="cost-card">
+
+            <div class="cost-label">
+                Annual maintenance
+            </div>
+
+            <div class="cost-value">
+                ₹{annual_maintenance:,.0f}
+            </div>
+
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-with cost3:
+with c3:
 
-    st.metric(
-        "5-Year Total",
-        f"₹{five_year_cost:,.0f}"
+    st.markdown(
+        f"""
+        <div class="cost-card">
+
+            <div class="cost-label">
+                5-year lifecycle
+            </div>
+
+            <div class="cost-value">
+                ₹{five_year_cost:,.0f}
+            </div>
+
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-st.caption(
-    "Planning assumptions only. Actual implementation costs "
-    "vary by site, material, labour and procurement."
+
+st.markdown(
+    "<div style='height:10px'></div>",
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    """
+    <div class="info-box">
+
+    <b>Included in the estimate</b><br><br>
+
+    Trees: planting, establishment, watering and recurring maintenance
+    &nbsp; · &nbsp;
+    Cool roofs: installation and maintenance
+    &nbsp; · &nbsp;
+    Shade structures: installation and maintenance
+
+    <br><br>
+
+    Planning assumptions only. Actual costs vary by site,
+    material, labour and procurement.
+
+    </div>
+    """,
+    unsafe_allow_html=True
 )
 
 
 # ============================================================
-# SIMULATION MAP
+# METHODOLOGY
 # ============================================================
 
 st.divider()
 
-st.header("🌡️ Intervention Impact Simulation")
+with st.expander("Methodology & data sources"):
 
-st.write(
-    f"Showing how the modelled heat-risk field changes "
-    f"from **{risk:.1f} → {predicted_risk:.1f}** "
-    f"after the selected intervention."
-)
+    st.markdown(
+        """
+### Heat Risk Index
 
-simulation_html = create_intervention_map(
-    data["lat"],
-    data["lon"],
-    risk,
-    predicted_risk,
-    trees,
-    roof_area,
-    shade
-)
+HeatScape combines four transparent indicators:
 
-# ------------------------------------------------------------
-# CRITICAL SECOND FIX:
-#
-# The key changes whenever a slider changes.
-# Therefore Streamlit creates a NEW iframe.
-# The browser cannot keep showing the old map.
-# ------------------------------------------------------------
+| Factor | Weight |
+|---|---:|
+| Surface Heat | 45% |
+| Built-up Intensity | 25% |
+| Vegetation Deficit | 20% |
+| Population Exposure | 10% |
 
-components.html(
-    simulation_html,
-    height=650,
-    scrolling=False
-)
+The resulting **Heat Risk Index ranges from 0–100**.
+
+### Data inputs
+
+**Landsat**  
+Surface temperature
+
+**Sentinel-2**  
+Vegetation / NDVI
+
+**Land cover**  
+Built-up intensity
+
+**WorldPop**  
+Population exposure
+
+**OpenStreetMap**  
+Road network and geographic context
+
+### Interpretation
+
+The intervention simulator is a modelled scenario tool.
+It estimates how changing intervention quantities affects
+the HeatScape risk index.
+
+It is not a validated physical climate model and does not
+claim an exact future air-temperature reduction.
+"""
+    )
 
 
 # ============================================================
-# EXPLANATION
+# FOOTER
 # ============================================================
 
-with st.expander("ℹ️ How HeatScape works"):
-
-    st.markdown("""
-### Input
-
-- Landsat surface temperature
-- Sentinel-2 vegetation / NDVI
-- Built-up intensity
-- Population exposure
-- Roads and locality information
-
-### Processing
-
-HeatScape combines these factors into a transparent:
-
-**Heat Risk Index**
-
-`0 → 100`
-
-The prototype weights are:
-
-- 45% Surface Heat
-- 25% Built-up
-- 20% Vegetation Deficit
-- 10% Population Exposure
-
-### Output
-
-For each locality, HeatScape provides:
-
-1. Heat Risk Index
-2. Dominant heat contributor
-3. Recommended intervention
-4. Intervention simulation
-5. Projected risk reduction
-6. Initial implementation cost
-7. Annual maintenance cost
-8. 5-year lifecycle cost
-
-### Important
-
-The intervention simulation is a **modelled scenario**, not a claim of exact future temperature.
-
-The thermal map visualizes the change in the HeatScape risk field.
-""")
-
-
-st.caption(
-    "HeatScape • Data-driven urban heat intervention planning"
+st.markdown(
+    """
+    <div class="footer">
+        HeatScape · Urban Heat Reduction Planner
+        <br>
+        Decision support for targeted, explainable cooling interventions
+    </div>
+    """,
+    unsafe_allow_html=True
 )
